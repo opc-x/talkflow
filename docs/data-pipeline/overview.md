@@ -2,165 +2,342 @@
 
 ## 总览
 
-```
-Callan Method PDF（Book 1–12）
+当前主流程已经从旧的 `index_v2.json` 搜索索引，升级为细粒度教材结构索引。
+
+```text
+Callan Method PDF Book 1-12
         ↓
-  build_index.py        提取所有 vocab + Q&A 条目
+extract_pymupdf.py
         ↓
-  index.json            19,698 条原始数据
+book-1.md ... book-12.md
         ↓
-  build_clusters_v2.py  词族匹配 + 文本清洗
+structured/extract_structured.py
         ↓
-  index_v2.json         18,477 条清洗后数据（过滤 1,221 条无效）
+structured/*.json
         ↓
-  seed_supabase.py      导入 Supabase
+structured/validate_fine_index.py
         ↓
-  Supabase DB           191 lessons / 3,751 clusters / 9,558 words / 9,012 Q&A
-```
-
-脚本位置：`kb-personal/callan-method/`
-
----
-
-## 第一步：PDF 解析 → index.json
-
-**脚本**：`build_index.py`（+ `convert.py` / `convert_html.py`）
-
-**输入**：`~/Downloads/Callan Method {1-12}.pdf`
-
-**原理**：
-- 用 `pdftotext` 提取文本，识别 Lesson 边界
-- 用 PyMuPDF (`fitz`) 检测蓝色矩形框 → 词族（vocab cluster）
-- 识别蓝框内词汇（`t=v`）和 Q&A 对（`t=q`）
-- 处理 Callan 私有字体编码（+31 ASCII 位移，Book 4/8 使用）
-
-**输出字段**：
-| 字段 | 说明 |
-|------|------|
-| `b`  | book 编号 1–12 |
-| `l`  | lesson 全局编号 1–191 |
-| `p`  | PDF 页码 |
-| `y`  | PDF Y 坐标 |
-| `t`  | `v`=词汇 / `q`=Q&A |
-| `c`  | CEFR 级别 |
-| `w`  | 词汇文本（`t=v`） |
-| `q`  | 问题文本（`t=q`） |
-| `a`  | 答案文本（`t=q`） |
-
----
-
-## 第二步：词族精准匹配 → index_v2.json
-
-**脚本**：`build_clusters_v2.py`
-
-**问题背景**：原始 `index.json` 里 Q&A 条目的词族（`cl` 字段）是靠"位置继承"赋值的——找最近的上方蓝框。这种方法对连续内容准确，但跨页或跨课时会错。
-
-**改进方案（v2）**：
-
-```
-匹配优先级：
-  1. 词汇文本匹配（同课 → 相邻课）  ← 最精准，覆盖 95.6% Q&A
-  2. 位置回退（同页最近蓝框）        ← 备用
-  3. 空字符串                        ← 实在匹配不上（393 条）
+seed_supabase_structured_rest.py
+        ↓
+Supabase DB
 ```
 
-**关键函数**：
-- `normalize_ligatures()` — 统一 PDF 连字符（`ﬂ`→`fl`，`ﬁ`→`fi`），解决 PDF 字体编码不一致问题
-- `decode_callan()` — 解码 Callan 私有字体（+31 ASCII 位移 + 控制字符映射）
-- `clean_text()` — 组合解码 + 连字符 + 压缩空格
-- `cluster_match_score()` — Q&A 文本与词族词汇重叠计数（过滤 <3 字符的功能词）
-- `find_cluster_for_qa()` — 先词汇匹配，再位置回退
-- `extract_page_clusters()` — 从 PDF 蓝框提取词族，**关键：提取时就做连字符 normalize**
+主目标：
 
-**最终精度**：
-| 类型 | 覆盖率 |
-|------|--------|
-| vocab 词族覆盖 | 80.2% |
-| Q&A 词族覆盖  | 95.6% |
+```text
+任意 term/question/answer/note/dictation/chart
+  -> block_id
+  -> book_page
+  -> pdf_page
+  -> lesson
+  -> stage/book
+```
 
-未覆盖的主要是介词/功能词（`on`、`in` 单独出现）及跨书找不到对应蓝框的条目。
+## 源文件
 
-**重跑方法**：
+```text
+/Users/cuijianchen/gh-projects/kb-personal/callan-method-origin
+```
+
+PDF 文件：
+
+```text
+Callan Method 1.pdf
+...
+Callan Method 12.pdf
+```
+
+## 第一步：PDF 到 Markdown
+
+脚本：
+
+```text
+/Users/cuijianchen/gh-projects/kb-personal/callan-method/extract_pymupdf.py
+```
+
+输出：
+
+```text
+book-1.md
+...
+book-12.md
+```
+
+这个阶段处理 Callan PDF 的私有字体编码、Q/A、vocab、notes、dictation 等基础文本抽取。
+
+## 第二步：Markdown/PDF 到细粒度结构索引
+
+脚本：
+
+```text
+/Users/cuijianchen/gh-projects/kb-personal/callan-method/structured/extract_structured.py
+```
+
+输出：
+
+```text
+structured/course-index.json
+structured/lesson-index.json
+structured/page-index.json
+structured/block-index.json
+structured/term-index.json
+structured/qa-index.json
+structured/dictation-index.json
+structured/chart-index.json
+```
+
+当前结构块类型：
+
+```text
+front_matter
+lexical_block
+grammar_note
+qa_block
+dictation
+word_building_exercise
+chart_reference
+chart_page
+```
+
+当前计数：
+
+```text
+12 books
+191 lessons
+1327 PDF pages
+9160 content blocks
+7250 term entries
+6503 unique normalized terms
+11412 Q&A pairs
+130 dictations
+69 chart refs/pages
+```
+
+## 第三步：结构验收
+
+脚本：
+
+```text
+/Users/cuijianchen/gh-projects/kb-personal/callan-method/structured/validate_fine_index.py
+```
+
+运行：
+
 ```bash
-cd kb-personal/callan-method
-/opt/homebrew/bin/python3 build_clusters_v2.py
-# 输出：html/index_v2.json
+cd /Users/cuijianchen/gh-projects/kb-personal/callan-method
+/opt/homebrew/bin/python3 structured/validate_fine_index.py
 ```
 
----
+必须通过：
 
-## 第三步：导入 Supabase
+```text
+15 PASS, 0 WARNING, 0 FAIL
+PASS
+```
 
-**脚本**：`kb-personal/callan-method/seed_supabase.py`
+验收覆盖：
 
-**依赖**：
+```text
+12 books present
+stages 1-12 present
+lessons 1-191 present
+every lesson has pdf_page
+book_page coverage
+every content block has anchors
+term -> block_id valid
+Q&A -> block_id valid
+no raw artifacts
+no vocabulary-index contamination
+book_page monotonic
+pdf_page monotonic
+course total_blocks matches block-index
+dictations explicitly modeled
+chart references/pages explicitly modeled
+```
+
+## 第四步：导入 Supabase
+
+Schema migration：
+
+```text
+/Users/cuijianchen/gh-projects/talkflow/supabase/migrations/202605120001_callan_kb_schema.sql
+```
+
+Seed 脚本：
+
+```text
+/Users/cuijianchen/gh-projects/kb-personal/callan-method/seed_supabase_structured.py
+/Users/cuijianchen/gh-projects/kb-personal/callan-method/seed_supabase_structured_pg.py
+/Users/cuijianchen/gh-projects/kb-personal/callan-method/seed_supabase_structured_rest.py
+```
+
+依赖：
+
 ```bash
 python3 -m venv /tmp/talkflow_venv
 /tmp/talkflow_venv/bin/pip install supabase
 ```
 
-**导入顺序（外键依赖决定）**：
-1. `lessons` (191 行)
-2. `vocab_clusters` (3,751 行) — lesson 为首次来源，Q&A-only cluster 也包含
-3. `vocab_words` (9,558 行)
-4. `qa_pairs` (9,012 行)
+环境变量：
 
-**注意**：导入前需临时开放 RLS INSERT 权限（脚本使用 anon key）：
-```sql
--- 导入前执行（见 seed_supabase.py 注释）
-CREATE POLICY "seed_insert_tmp" ON lessons  FOR INSERT TO anon WITH CHECK (true);
--- ... 其他表同理
--- 导入完成后立即 DROP
+```bash
+export SUPABASE_URL="https://..."
+export SUPABASE_SERVICE_ROLE_KEY="..."
 ```
 
-**重跑（全量重导）**：
-```sql
--- 先清表（保留表结构和 RLS 策略）
-TRUNCATE vocab_words, qa_pairs, vocab_clusters, lessons RESTART IDENTITY CASCADE;
-```
-然后执行 `seed_supabase.py`。
+REST 导入：
 
----
-
-## 数据字段映射
-
-```
-index_v2.json  →  Supabase 表
-─────────────────────────────────────────────────
-b              →  lessons.book
-l              →  lessons.lesson_num
-b (=stage)     →  lessons.stage  (Callan stage = book 编号)
-c              →  lessons.cefr_level
-cl             →  vocab_clusters.cluster_text
-cl (拆分)       →  vocab_clusters.words[]
-w              →  vocab_words.word
-q              →  qa_pairs.question
-a              →  qa_pairs.answer
-p              →  vocab_words/qa_pairs.page_index
-y              →  vocab_words/qa_pairs.y_coord
+```bash
+cd /Users/cuijianchen/gh-projects/kb-personal/callan-method
+/tmp/talkflow_venv/bin/python3 seed_supabase_structured.py
 ```
 
----
+2026-05-12 实际线上导入目标：
 
-## 后续待办
-
-- [ ] 生成问题音频（OpenAI tts-1，~$15 一次性，存 Cloudflare R2）
-- [ ] 场景图制作 + 热区坐标录入（参考 `charts/extracted/` 里的 Chart 1）
-- [ ] 更新 `seed_supabase.py` 中的 `audio_url` 字段（批量 UPDATE）
-- [ ] 修复未覆盖的 393 条 Q&A（可手动标注或用更宽松的位置匹配）
-
----
-
-## 文件结构
-
+```text
+project ref: frhtkmpsfyyidqijuijp
+project url: https://frhtkmpsfyyidqijuijp.supabase.co
 ```
-kb-personal/callan-method/
-├── build_index.py          Step 1：PDF → index.json
-├── build_clusters_v2.py    Step 2：词族匹配 → index_v2.json  ← 主要修改此文件
-├── seed_supabase.py        Step 3：index_v2.json → Supabase
-├── html/
-│   ├── index.json          Step 1 输出（原始）
-│   └── index_v2.json       Step 2 输出（清洗后，当前版本）
-└── charts/
-    └── extracted/          从 PDF 提取的图表图片（Chart 1 = 场景参考图）
+
+实际采用 `seed_supabase_structured_rest.py`，通过 Supabase MCP 先创建 schema 和一次性临时 seed policy，再用 REST seed，导入完成后删除临时 anon seed policy。
+
+Postgres 直连导入：
+
+```bash
+cd /Users/cuijianchen/gh-projects/kb-personal/callan-method
+POSTGRES_URL_NON_POOLING="postgresql://..." /tmp/talkflow_pg_venv/bin/python seed_supabase_structured_pg.py
+```
+
+注意：长期流程不要保留 anon 写权限。若没有 service role，只允许短时间开启 seed policy，导入后必须立刻撤销，并用 MCP/SQL 验证 policy 已删除。
+
+## Supabase 表映射
+
+```text
+course-index.json      -> books
+lesson-index.json      -> lessons
+page-index.json        -> book_pages
+block-index.json       -> content_blocks / notes / exercises
+term-index.json        -> terms
+qa-index.json          -> qa_pairs
+dictation-index.json   -> exercises where exercise_type = 'dictation'
+chart-index.json       -> chart_refs
+```
+
+## 向量处理
+
+Schema 已预留：
+
+```text
+content_blocks.embedding
+qa_pairs.question_embedding
+qa_pairs.answer_embedding
+notes.embedding
+exercises.embedding
+terms.embedding
+```
+
+执行顺序：
+
+```text
+1. 先导入关系型结构
+2. 验证 counts 和 anchors
+3. 再批量生成 embeddings
+4. 最后创建 hnsw vector index 和检索 RPC
+```
+
+不要先上向量再补结构。没有 `book_page/pdf_page/lesson/block_id` 的向量结果，对学习 app 来说不可控。
+
+2026-05-12 已完成：
+
+```text
+content_blocks with embedding: 9147
+embedding model: text-embedding-3-small
+vector index: idx_blocks_embedding_hnsw
+semantic RPC: match_content_blocks
+keyword RPC: search_content_blocks_text
+```
+
+## 旧流程状态
+
+旧文件仍可作为历史参考：
+
+```text
+build_index.py
+build_clusters.py
+seed_supabase.py
+html/index_v2.json
+```
+
+但它们不再是 app 的主数据管线。
+
+旧模型：
+
+```text
+lessons
+vocab_clusters
+vocab_words
+qa_pairs
+```
+
+新版替代：
+
+```text
+books
+lessons
+book_pages
+content_blocks
+terms
+qa_pairs
+notes
+exercises
+chart_refs
+```
+
+## 线上验收结果
+
+TalkFlow 当前目标 Supabase project ref：
+
+```text
+frhtkmpsfyyidqijuijp
+```
+
+线上表数量：
+
+```text
+16 public tables
+```
+
+线上内容计数：
+
+```text
+books: 12
+lessons: 191
+book_pages: 1327
+content_blocks: 9160
+terms: 7250
+qa_pairs: 11412
+notes: 1803
+exercises: 138
+chart_refs: 69
+```
+
+线上引用完整性：
+
+```text
+term_bad_block_refs: 0
+qa_bad_block_refs: 0
+notes_bad_block_refs: 0
+exercises_bad_block_refs: 0
+charts_bad_block_refs: 0
+blocks_without_pdf: 0
+lesson_pages_without_book_page: 0
+```
+
+环境变量注意事项：
+
+```text
+Local .env.local points to frhtkmpsfyyidqijuijp.
+Vercel Production/Development NEXT_PUBLIC_SUPABASE_URL and SUPABASE_URL were updated to frhtkmpsfyyidqijuijp on 2026-05-12.
+Vercel Preview needs a non-production git branch before branch-scoped preview env can be added.
+POSTGRES_* and SUPABASE_SERVICE_ROLE_KEY variables still come from the old Vercel integration and should not be treated as the app source of truth unless they are explicitly rotated to frhtkmpsfyyidqijuijp.
 ```
