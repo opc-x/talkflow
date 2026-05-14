@@ -4,57 +4,101 @@
 
 @layer base {
   :root {
+    /* TalkFlow 品牌配色 - 清新鼓励的青绿色系 */
     --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
+    --foreground: 220 20% 10%;
+    
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
+    --card-foreground: 220 20% 10%;
+    
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
-    --radius: 0.5rem;
-  }
-  .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
+    --popover-foreground: 220 20% 10%;
+    
+    /* 主色：翡翠绿 - 代表成长、自信、沟通 */
+    --primary: 160 84% 39%;
+    --primary-foreground: 0 0% 100%;
+    
+    /* 次要色：柔和灰蓝 */
+    --secondary: 210 20% 96%;
+    --secondary-foreground: 220 20% 20%;
+    
+    /* 静音色 */
+    --muted: 210 20% 96%;
+    --muted-foreground: 220 10% 45%;
+    
+    /* 强调色：温暖橙 - 激励/成就 */
+    --accent: 24 95% 53%;
+    --accent-foreground: 0 0% 100%;
+    
+    /* 警告/错误 */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    
+    /* 边框和输入框 */
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 160 84% 39%;
+    
+    /* 图表颜色 */
+    --chart-1: 160 84% 39%;
+    --chart-2: 24 95% 53%;
+    --chart-3: 199 89% 48%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+    
+    --radius: 0.75rem;
+    
+    /* 成功色 */
+    --success: 160 84% 39%;
+    --success-foreground: 0 0% 100%;
+  }
+  
+  .dark {
+    /* TalkFlow 深色模式 */
+    --background: 222 47% 6%;
+    --foreground: 210 20% 98%;
+    
+    --card: 222 47% 9%;
+    --card-foreground: 210 20% 98%;
+    
+    --popover: 222 47% 9%;
+    --popover-foreground: 210 20% 98%;
+    
+    /* 主色：翡翠绿 */
+    --primary: 160 70% 45%;
+    --primary-foreground: 0 0% 100%;
+    
+    /* 次要色 */
+    --secondary: 222 30% 14%;
+    --secondary-foreground: 210 20% 90%;
+    
+    /* 静音色 */
+    --muted: 222 30% 14%;
+    --muted-foreground: 220 10% 55%;
+    
+    /* 强调色：温暖橙 */
+    --accent: 24 90% 55%;
+    --accent-foreground: 0 0% 100%;
+    
+    /* 警告/错误 */
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 100%;
+    
+    /* 边框和输入框 */
+    --border: 222 30% 18%;
+    --input: 222 30% 18%;
+    --ring: 160 70% 45%;
+    
+    /* 图表颜色 */
+    --chart-1: 160 70% 50%;
+    --chart-2: 24 90% 55%;
+    --chart-3: 199 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+    
+    /* 成功色 */
+    --success: 160 70% 45%;
+    --success-foreground: 0 0% 100%;
   }
 }
 
@@ -64,5 +108,39 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* TalkFlow 自定义样式 */
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  .text-pretty {
+    text-wrap: pretty;
+  }
+  
+  /* 渐变文字效果 */
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent;
+  }
+  
+  /* 卡片悬浮效果 */
+  .card-hover {
+    @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+  }
+  
+  /* 按钮发光效果 */
+  .btn-glow {
+    @apply relative overflow-hidden;
+  }
+  .btn-glow::after {
+    content: '';
+    @apply absolute inset-0 opacity-0 transition-opacity duration-300;
+    background: linear-gradient(135deg, transparent 30%, rgba(255,255,255,0.2) 50%, transparent 70%);
+  }
+  .btn-glow:hover::after {
+    @apply opacity-100;
   }
 }
