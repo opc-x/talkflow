@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, BookOpen, Mic, Volume2, CheckCircle2, XCircle, ArrowRight } from "lucide-react";
+import Link from "next/link";
 import type { Segment } from "@/lib/learn";
 
 type Phase = "vocab" | "question" | "answer";
@@ -44,14 +45,13 @@ export function SessionCard({ segments, bookNum, lessonNum }: Props) {
     if (pairIdx < segment.pairs.length - 1) {
       const next = segment.pairs[pairIdx + 1];
       setPairIdx((p) => p + 1);
-      // grammar note → skip directly to answer
       setPhase(next.question === "" ? "answer" : "question");
     } else if (segIdx < segments.length - 1) {
       const nextSeg = segments[segIdx + 1];
       setSegIdx((s) => s + 1);
       setPairIdx(0);
       setPhase("vocab");
-      void nextSeg; // consumed above
+      void nextSeg;
     } else {
       setDone(true);
     }
@@ -59,7 +59,6 @@ export function SessionCard({ segments, bookNum, lessonNum }: Props) {
 
   function startSegment() {
     if (segment.pairs.length === 0) {
-      // no Q&A — just advance
       if (segIdx < segments.length - 1) {
         setSegIdx((s) => s + 1);
         setPairIdx(0);
@@ -85,7 +84,6 @@ export function SessionCard({ segments, bookNum, lessonNum }: Props) {
         setPhase("vocab");
       }
     } else {
-      // vocab → previous segment
       if (segIdx > 0) {
         const prev = segments[segIdx - 1];
         setSegIdx((s) => s - 1);
@@ -98,110 +96,160 @@ export function SessionCard({ segments, bookNum, lessonNum }: Props) {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Top bar */}
-      <div className="px-6 pt-8 pb-4">
-        <div className="flex items-center justify-between text-xs text-muted-foreground mb-3 tracking-wide uppercase">
-          <span>
-            Book {bookNum} · Lesson {lessonNum}
-          </span>
-          <span>{progress}%</span>
+      {/* Header */}
+      <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b border-border">
+        <div className="max-w-2xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between mb-3">
+            <Link 
+              href="/protected" 
+              className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ChevronLeft className="w-5 h-5" />
+              <span className="text-sm font-medium">退出</span>
+            </Link>
+            <div className="flex items-center gap-2 text-sm">
+              <BookOpen className="w-4 h-4 text-primary" />
+              <span className="text-foreground font-medium">
+                Book {bookNum} · Lesson {lessonNum}
+              </span>
+            </div>
+            <div className="w-16 text-right">
+              <span className="text-sm font-medium text-primary">{progress}%</span>
+            </div>
+          </div>
+          
+          {/* Progress bar */}
+          <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+            <div
+              className="bg-primary h-2 rounded-full transition-all duration-500 ease-out"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
         </div>
-        <div className="w-full bg-muted rounded-full h-0.5">
-          <div
-            className="bg-foreground h-0.5 rounded-full transition-all duration-500"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-      </div>
+      </header>
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col justify-center px-6 py-8 w-full max-w-lg mx-auto">
-        {/* Vocab block */}
-        <div className={`mb-10 transition-all duration-300 ${phase !== "vocab" ? "opacity-40" : ""}`}>
-          <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-4">
-            词汇
-          </p>
+      <main className="flex-1 flex flex-col max-w-2xl mx-auto w-full px-4 py-8">
+        {/* Vocab card */}
+        <div 
+          className={`mb-6 p-6 rounded-2xl border transition-all duration-300 ${
+            phase === "vocab" 
+              ? "bg-primary/5 border-primary/20" 
+              : "bg-card border-border opacity-60"
+          }`}
+        >
+          <div className="flex items-center gap-2 mb-4">
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+              phase === "vocab" ? "bg-primary/10" : "bg-muted"
+            }`}>
+              <Volume2 className={`w-4 h-4 ${phase === "vocab" ? "text-primary" : "text-muted-foreground"}`} />
+            </div>
+            <span className={`text-xs font-medium uppercase tracking-wider ${
+              phase === "vocab" ? "text-primary" : "text-muted-foreground"
+            }`}>
+              词汇
+            </span>
+          </div>
           <p
             className={`font-medium text-foreground leading-relaxed transition-all duration-300 ${
-              phase === "vocab" ? "text-3xl" : "text-base"
+              phase === "vocab" ? "text-2xl md:text-3xl" : "text-lg"
             }`}
           >
             {segment.vocab.split(" | ").join("  ·  ")}
           </p>
         </div>
 
-        {/* Divider */}
-        {phase !== "vocab" && (
-          <div className="border-t border-border mb-10" />
-        )}
+        {/* Question/Answer area */}
+        {phase !== "vocab" && pair && (
+          <div className="flex-1 flex flex-col gap-4">
+            {/* Question card */}
+            {!isGrammarNote && (
+              <div className={`p-6 rounded-2xl transition-all duration-300 ${
+                phase === "question" 
+                  ? "bg-card border-2 border-primary shadow-lg" 
+                  : "bg-card border border-border"
+              }`}>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                      phase === "question" ? "bg-primary" : "bg-muted"
+                    }`}>
+                      <Mic className={`w-4 h-4 ${
+                        phase === "question" ? "text-primary-foreground" : "text-muted-foreground"
+                      }`} />
+                    </div>
+                    <span className={`text-xs font-medium uppercase tracking-wider ${
+                      phase === "question" ? "text-primary" : "text-muted-foreground"
+                    }`}>
+                      问题
+                    </span>
+                  </div>
+                  {segment.pairs.length > 1 && (
+                    <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
+                      {pairIdx + 1}/{segment.pairs.length}
+                    </span>
+                  )}
+                </div>
+                <p className="text-xl md:text-2xl font-medium text-foreground leading-relaxed">
+                  {pair.question}
+                </p>
+              </div>
+            )}
 
-        {/* Question */}
-        {(phase === "question" || phase === "answer") && pair && !isGrammarNote && (
-          <div className="mb-8">
-            <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-4">
-              问题
-              {segment.pairs.length > 1 && (
-                <span className="ml-2 normal-case">
-                  {pairIdx + 1}/{segment.pairs.length}
-                </span>
-              )}
-            </p>
-            <p className="text-2xl font-medium text-foreground leading-relaxed">
-              {pair.question}
-            </p>
-          </div>
-        )}
-
-        {/* Grammar note label */}
-        {phase === "answer" && isGrammarNote && (
-          <div className="mb-4">
-            <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
-              语法注释
-            </p>
-          </div>
-        )}
-
-        {/* Answer */}
-        {phase === "answer" && pair && (
-          <div className="mb-10">
-            {isGrammarNote ? (
-              <div className="bg-muted rounded-2xl p-5">
-                <p className="text-foreground leading-relaxed text-lg">
+            {/* Answer card */}
+            {phase === "answer" && (
+              <div className={`p-6 rounded-2xl border-2 transition-all duration-300 ${
+                isGrammarNote 
+                  ? "bg-accent/10 border-accent/30" 
+                  : "bg-primary/5 border-primary/30"
+              }`}>
+                <div className="flex items-center gap-2 mb-4">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                    isGrammarNote ? "bg-accent/20" : "bg-primary/20"
+                  }`}>
+                    <CheckCircle2 className={`w-4 h-4 ${
+                      isGrammarNote ? "text-accent" : "text-primary"
+                    }`} />
+                  </div>
+                  <span className={`text-xs font-medium uppercase tracking-wider ${
+                    isGrammarNote ? "text-accent" : "text-primary"
+                  }`}>
+                    {isGrammarNote ? "语法注释" : "答案"}
+                  </span>
+                </div>
+                <p className={`text-xl md:text-2xl leading-relaxed ${
+                  isGrammarNote ? "text-foreground" : "text-foreground/80"
+                }`}>
                   {pair.answer}
                 </p>
               </div>
-            ) : (
-              <>
-                <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-4">
-                  答案
-                </p>
-                <p className="text-2xl text-muted-foreground leading-relaxed">
-                  {pair.answer}
-                </p>
-              </>
             )}
           </div>
         )}
 
+        {/* Spacer */}
+        <div className="flex-1" />
+
         {/* Action buttons */}
-        <div className="space-y-3 mt-4">
+        <div className="mt-8 space-y-3">
           {phase === "vocab" && (
             <Button
               size="lg"
-              className="w-full rounded-2xl h-14 text-base font-normal"
+              className="w-full rounded-2xl h-14 text-base font-medium bg-primary hover:bg-primary/90 text-primary-foreground"
               onClick={startSegment}
             >
-              {segment.pairs.length === 0 ? "继续 →" : "开始提问 →"}
+              {segment.pairs.length === 0 ? "继续" : "开始提问"}
+              <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
           )}
 
           {phase === "question" && (
             <Button
               size="lg"
-              className="w-full rounded-2xl h-14 text-base font-normal"
+              className="w-full rounded-2xl h-14 text-base font-medium bg-primary hover:bg-primary/90 text-primary-foreground"
               onClick={() => setPhase("answer")}
             >
-              看答案
+              查看答案
             </Button>
           )}
 
@@ -210,33 +258,35 @@ export function SessionCard({ segments, bookNum, lessonNum }: Props) {
               <Button
                 size="lg"
                 variant="outline"
-                className="flex-1 rounded-2xl h-14 text-base font-normal"
+                className="flex-1 rounded-2xl h-14 text-base font-medium border-2 border-destructive/30 text-destructive hover:bg-destructive/10 hover:border-destructive/50"
                 onClick={nextPairOrSegment}
               >
-                没记住
+                <XCircle className="mr-2 w-5 h-5" />
+                再练一次
               </Button>
               <Button
                 size="lg"
-                className="flex-1 rounded-2xl h-14 text-base font-normal"
+                className="flex-1 rounded-2xl h-14 text-base font-medium bg-primary hover:bg-primary/90 text-primary-foreground"
                 onClick={nextPairOrSegment}
               >
-                记住了 ✓
+                <CheckCircle2 className="mr-2 w-5 h-5" />
+                记住了
               </Button>
             </div>
           )}
         </div>
-      </div>
 
-      {/* Back nav */}
-      <div className="px-6 pb-16">
-        <button
-          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          onClick={goBack}
-        >
-          <ChevronLeft className="h-4 w-4" />
-          上一个
-        </button>
-      </div>
+        {/* Back navigation */}
+        <div className="mt-6 text-center">
+          <button
+            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            onClick={goBack}
+          >
+            <ChevronLeft className="h-4 w-4" />
+            上一个
+          </button>
+        </div>
+      </main>
     </div>
   );
 }
@@ -251,22 +301,66 @@ function LessonComplete({
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center px-6">
       <div className="text-center max-w-sm w-full">
-        <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center mx-auto mb-8">
-          <span className="text-primary-foreground text-2xl">✓</span>
+        {/* Success animation */}
+        <div className="relative mb-8">
+          <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+            <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center">
+              <CheckCircle2 className="w-8 h-8 text-primary-foreground" />
+            </div>
+          </div>
+          {/* Confetti dots */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-32">
+            <div className="absolute top-2 left-4 w-2 h-2 rounded-full bg-accent animate-pulse" />
+            <div className="absolute top-4 right-2 w-3 h-3 rounded-full bg-primary/50 animate-pulse" />
+            <div className="absolute bottom-4 left-2 w-2 h-2 rounded-full bg-primary animate-pulse" />
+            <div className="absolute bottom-2 right-4 w-2 h-2 rounded-full bg-accent/50 animate-pulse" />
+          </div>
         </div>
-        <h2 className="text-2xl font-medium text-foreground mb-2">
-          Lesson {lessonNum} 完成
+        
+        <h2 className="text-3xl font-bold text-foreground mb-2">
+          太棒了！
         </h2>
-        <p className="text-muted-foreground mb-12">Book {bookNum}</p>
-        <Button
-          size="lg"
-          className="w-full rounded-2xl h-14 text-base font-normal"
-          onClick={() => {
-            window.location.href = `/protected/learn/${bookNum}/${lessonNum + 1}`;
-          }}
-        >
-          下一课 →
-        </Button>
+        <p className="text-xl text-muted-foreground mb-2">
+          Lesson {lessonNum} 完成
+        </p>
+        <p className="text-sm text-muted-foreground mb-8">
+          Book {bookNum}
+        </p>
+        
+        {/* Stats placeholder */}
+        <div className="flex justify-center gap-8 mb-8">
+          <div className="text-center">
+            <p className="text-2xl font-bold text-primary">100%</p>
+            <p className="text-xs text-muted-foreground">完成度</p>
+          </div>
+          <div className="text-center">
+            <p className="text-2xl font-bold text-accent">+10</p>
+            <p className="text-xs text-muted-foreground">经验值</p>
+          </div>
+        </div>
+        
+        <div className="space-y-3">
+          <Button
+            size="lg"
+            className="w-full rounded-2xl h-14 text-base font-medium bg-primary hover:bg-primary/90 text-primary-foreground"
+            onClick={() => {
+              window.location.href = `/protected/learn/${bookNum}/${lessonNum + 1}`;
+            }}
+          >
+            下一课
+            <ArrowRight className="ml-2 w-5 h-5" />
+          </Button>
+          
+          <Link href="/protected">
+            <Button
+              size="lg"
+              variant="ghost"
+              className="w-full rounded-2xl h-14 text-base font-medium text-muted-foreground hover:text-foreground"
+            >
+              返回首页
+            </Button>
+          </Link>
+        </div>
       </div>
     </div>
   );
