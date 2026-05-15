@@ -1,43 +1,100 @@
 import { redirect } from "next/navigation";
-
 import { createClient } from "@/lib/supabase/server";
-import { InfoIcon } from "lucide-react";
-import { FetchDataSteps } from "@/components/tutorial/fetch-data-steps";
-import { Suspense } from "react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { ArrowRight, BookOpen, CheckCircle2, Flame } from "lucide-react";
 
-async function UserDetails() {
+export default async function DashboardPage() {
   const supabase = await createClient();
-  const { data, error } = await supabase.auth.getClaims();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/auth/login");
 
-  if (error || !data?.claims) {
-    redirect("/auth/login");
+  const { data: progress } = await supabase
+    .from("user_progress")
+    .select("current_lesson_id, lessons_done")
+    .eq("user_id", user.id)
+    .single();
+
+  let currentLesson: { book_num: number; lesson_num: number } | null = null;
+  if (progress?.current_lesson_id) {
+    const { data } = await supabase
+      .from("lessons")
+      .select("book_num, lesson_num")
+      .eq("id", progress.current_lesson_id)
+      .single();
+    currentLesson = data;
   }
 
-  return JSON.stringify(data.claims, null, 2);
+  const lessonsDone = progress?.lessons_done?.length ?? 0;
+  const resumeHref = currentLesson
+    ? `/protected/learn/${currentLesson.book_num}/${currentLesson.lesson_num}`
+    : "/protected/learn/1/1";
+  const resumeLabel = currentLesson
+    ? `继续 Book ${currentLesson.book_num} · Lesson ${currentLesson.lesson_num}`
+    : "从第一课开始";
+
+  const displayName = user.email?.split("@")[0] ?? "同学";
+
+  return (
+    <div className="max-w-4xl mx-auto w-full px-4 py-12">
+      {/* Hero */}
+      <div className="mb-10">
+        <p className="text-sm text-muted-foreground mb-1">
+          欢迎回来，{displayName}
+        </p>
+        <h1 className="text-3xl font-bold text-foreground mb-6">
+          继续你的英语练习
+        </h1>
+        <Button
+          asChild
+          size="lg"
+          className="rounded-xl h-14 px-8 text-base font-semibold bg-primary hover:bg-primary/90 text-primary-foreground"
+        >
+          <Link href={resumeHref}>
+            {resumeLabel}
+            <ArrowRight className="ml-2 w-5 h-5" />
+          </Link>
+        </Button>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-4">
+        <StatCard
+          icon={<CheckCircle2 className="w-5 h-5 text-primary" />}
+          value={lessonsDone}
+          label="已完成课时"
+        />
+        <StatCard
+          icon={<BookOpen className="w-5 h-5 text-primary" />}
+          value={`Book ${currentLesson?.book_num ?? 1}`}
+          label="当前册"
+        />
+        <StatCard
+          icon={<Flame className="w-5 h-5 text-accent" />}
+          value="—"
+          label="连续天数"
+        />
+      </div>
+    </div>
+  );
 }
 
-export default function ProtectedPage() {
+function StatCard({
+  icon,
+  value,
+  label,
+}: {
+  icon: React.ReactNode;
+  value: number | string;
+  label: string;
+}) {
   return (
-    <div className="flex-1 w-full flex flex-col gap-12">
-      <div className="w-full">
-        <div className="bg-accent text-sm p-3 px-5 rounded-md text-foreground flex gap-3 items-center">
-          <InfoIcon size="16" strokeWidth={2} />
-          This is a protected page that you can only see as an authenticated
-          user
-        </div>
-      </div>
-      <div className="flex flex-col gap-2 items-start">
-        <h2 className="font-bold text-2xl mb-4">Your user details</h2>
-        <pre className="text-xs font-mono p-3 rounded border max-h-32 overflow-auto">
-          <Suspense>
-            <UserDetails />
-          </Suspense>
-        </pre>
-      </div>
-      <div>
-        <h2 className="font-bold text-2xl mb-4">Next steps</h2>
-        <FetchDataSteps />
-      </div>
+    <div className="bg-card rounded-xl border border-border p-5 shadow-sm">
+      <div className="flex items-center gap-2 mb-3">{icon}</div>
+      <p className="text-2xl font-bold text-foreground">{value}</p>
+      <p className="text-xs text-muted-foreground mt-1">{label}</p>
     </div>
   );
 }
