@@ -71,6 +71,7 @@ export default function LearnPreviewPage() {
       segments={PREVIEW_SEGMENTS}
       bookNum={1}
       lessonNum={1}
+      lessonId={null}
     />
   );
 }

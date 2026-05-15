@@ -21,12 +21,20 @@ export default async function LessonPage({ params }: Props) {
   } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login");
 
-  const { data: blocks, error } = await supabase
-    .from("content_blocks")
-    .select("id, block_type, text, book_num, lesson_num, book_page, pdf_page, stage")
-    .eq("book_num", bookNum)
-    .eq("lesson_num", lessonNum)
-    .in("block_type", ["lexical_block", "qa_block", "grammar_note"]);
+  const [{ data: lesson }, { data: blocks, error }] = await Promise.all([
+    supabase
+      .from("lessons")
+      .select("id")
+      .eq("book_num", bookNum)
+      .eq("lesson_num", lessonNum)
+      .single(),
+    supabase
+      .from("content_blocks")
+      .select("id, block_type, text, book_num, lesson_num, book_page, pdf_page, stage")
+      .eq("book_num", bookNum)
+      .eq("lesson_num", lessonNum)
+      .in("block_type", ["lexical_block", "qa_block", "grammar_note"]),
+  ]);
 
   if (error || !blocks?.length) {
     redirect("/protected/learn/1/1");
@@ -39,6 +47,7 @@ export default async function LessonPage({ params }: Props) {
       segments={segments}
       bookNum={bookNum}
       lessonNum={lessonNum}
+      lessonId={lesson?.id ?? null}
     />
   );
 }

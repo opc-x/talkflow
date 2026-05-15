@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, BookOpen, Mic, Volume2, CheckCircle2, XCircle, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import type { Segment } from "@/lib/learn";
+import { completeLesson } from "@/app/protected/learn/[bookNum]/[lessonNum]/actions";
 
 type Phase = "vocab" | "question" | "answer";
 
@@ -12,16 +13,25 @@ interface Props {
   segments: Segment[];
   bookNum: number;
   lessonNum: number;
+  lessonId: number | null;
 }
 
-export function SessionCard({ segments, bookNum, lessonNum }: Props) {
+export function SessionCard({ segments, bookNum, lessonNum, lessonId }: Props) {
   const [segIdx, setSegIdx] = useState(0);
   const [phase, setPhase] = useState<Phase>("vocab");
   const [pairIdx, setPairIdx] = useState(0);
   const [done, setDone] = useState(false);
+  const [nextHref, setNextHref] = useState<string | null>(null);
+  const [, startTransition] = useTransition();
 
   if (done) {
-    return <LessonComplete bookNum={bookNum} lessonNum={lessonNum} />;
+    return (
+      <LessonComplete
+        bookNum={bookNum}
+        lessonNum={lessonNum}
+        nextHref={nextHref}
+      />
+    );
   }
 
   const segment = segments[segIdx];
@@ -54,6 +64,16 @@ export function SessionCard({ segments, bookNum, lessonNum }: Props) {
       void nextSeg;
     } else {
       setDone(true);
+      if (lessonId) {
+        startTransition(async () => {
+          const result = await completeLesson(lessonId);
+          if (result.nextLesson) {
+            setNextHref(
+              `/protected/learn/${result.nextLesson.book_num}/${result.nextLesson.lesson_num}`
+            );
+          }
+        });
+      }
     }
   }
 
@@ -294,9 +314,11 @@ export function SessionCard({ segments, bookNum, lessonNum }: Props) {
 function LessonComplete({
   bookNum,
   lessonNum,
+  nextHref,
 }: {
   bookNum: number;
   lessonNum: number;
+  nextHref: string | null;
 }) {
   return (
     <div className="flex-1 bg-background flex flex-col items-center justify-center px-6 py-12">
@@ -341,14 +363,14 @@ function LessonComplete({
         
         <div className="space-y-3">
           <Button
+            asChild
             size="lg"
             className="w-full rounded-2xl h-14 text-base font-medium bg-primary hover:bg-primary/90 text-primary-foreground"
-            onClick={() => {
-              window.location.href = `/protected/learn/${bookNum}/${lessonNum + 1}`;
-            }}
           >
-            下一课
-            <ArrowRight className="ml-2 w-5 h-5" />
+            <Link href={nextHref ?? `/protected/learn/${bookNum}/${lessonNum + 1}`}>
+              下一课
+              <ArrowRight className="ml-2 w-5 h-5" />
+            </Link>
           </Button>
           
           <Link href="/protected">
