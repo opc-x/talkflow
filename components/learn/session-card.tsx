@@ -95,9 +95,9 @@ export function SessionCard({ segments, bookNum, lessonNum }: Props) {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="flex-1 bg-background flex flex-col">
       {/* Header */}
-      <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b border-border">
+      <header className="sticky top-14 z-10 bg-background/80 backdrop-blur-sm border-b border-border">
         <div className="max-w-2xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between mb-3">
             <Link 
@@ -299,7 +299,7 @@ function LessonComplete({
   lessonNum: number;
 }) {
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-6">
+    <div className="flex-1 bg-background flex flex-col items-center justify-center px-6 py-12">
       <div className="text-center max-w-sm w-full">
         {/* Success animation */}
         <div className="relative mb-8">
