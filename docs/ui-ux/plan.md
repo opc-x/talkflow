@@ -482,14 +482,14 @@ DESIGN SYSTEM (strictly follow):
 - Icons: lucide-react only
 
 LAYOUT:
-Sticky top nav: [🎤 TalkFlow logo] [地图 练习 复习 工具 nav links] [🔥3 streak badge] [Avatar dropdown]
+Sticky top nav: [Mic icon + "TalkFlow" bold text] [地图 练习 复习 工具 nav links] [Flame icon + "3天" streak badge text-primary] [Avatar dropdown]
 Main content: max-w-4xl mx-auto px-4 py-8
 
 SECTIONS (top to bottom):
 
 1. GREETING (no card):
-   "早上好，阿强 👋" — text-3xl font-bold
-   "2026年5月15日 · 周四" — text-muted-foreground
+   "早上好，阿强" — text-3xl font-bold
+   "2026年5月15日 · 周四" — text-muted-foreground text-sm
 
 2. RESUME CARD (prominent, primary-colored left border or ring):
    Top-left badge: "上次练习"
@@ -502,8 +502,11 @@ SECTIONS (top to bottom):
    Card A: BookOpen icon, "今日新课", "Book 3 Lesson 42", button "开始学习"
    Card B: RotateCcw icon, "到期复习", "8 个词汇", button "开始复习" (outline variant)
 
-4. ACHIEVEMENTS ROW — title "我的成就", 3 inline stat badges:
-   🔥 连续 3 天 | 📖 已学 47 课 | 💬 掌握 1,240 词
+4. ACHIEVEMENTS ROW — title "我的成就", 3 inline stat items (icon + number + label):
+   Flame icon (text-primary) + "3" + "连续天数"
+   BookOpen icon (text-primary) + "47" + "已学课时"
+   MessageCircle icon (text-primary) + "1,240" + "掌握词汇"
+   Each item: bg-card rounded-xl border p-4, number text-2xl font-bold
 
 All UI text in Chinese. Clean, focused, no decorative clutter.
 ```
