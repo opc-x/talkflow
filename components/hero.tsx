@@ -242,7 +242,7 @@ export function Hero() {
         <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
           <Logo />
           <p className="text-muted-foreground text-sm">
-            &copy; {new Date().getFullYear()} TalkFlow. 让口语流利起来。
+            &copy; 2026 TalkFlow. 让口语流利起来。
           </p>
         </div>
       </footer>

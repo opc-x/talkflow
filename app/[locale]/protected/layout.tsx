@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Mic, Flame, Settings, LogOut } from "lucide-react";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { createClient } from "@/lib/supabase/server";
+import { getLocale } from "next-intl/server";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -47,6 +48,7 @@ export default async function ProtectedLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const locale = await getLocale();
   const supabase = await createClient();
   const {
     data: { user },
@@ -56,10 +58,10 @@ export default async function ProtectedLayout({
   const initials = (user?.email ?? "?")[0].toUpperCase();
 
   const navLinks = [
-    { href: "/protected/map", label: "地图" },
-    { href: "/protected/learn", label: "练习" },
-    { href: "/protected/review", label: "复习" },
-    { href: "/protected/tools", label: "工具" },
+    { href: `/${locale}/protected/map`, label: "地图" },
+    { href: `/${locale}/protected/learn`, label: "练习" },
+    { href: `/${locale}/protected/review`, label: "复习" },
+    { href: `/${locale}/protected/tools`, label: "工具" },
   ];
 
   return (
@@ -68,10 +70,10 @@ export default async function ProtectedLayout({
         <div className="max-w-5xl mx-auto px-4 h-full flex items-center justify-between">
           {/* Logo */}
           <Link
-            href="/protected"
-            className="flex items-center gap-2 font-bold text-xl text-foreground hover:text-primary transition-colors shrink-0"
+            href={`/${locale}/protected`}
+            className="flex items-center gap-1.5 font-bold text-lg text-primary shrink-0"
           >
-            <Mic className="w-5 h-5 text-primary" />
+            <Mic className="w-4 h-4" />
             TalkFlow
           </Link>
 
@@ -99,14 +101,12 @@ export default async function ProtectedLayout({
             <ThemeSwitcher />
             {user && (
               <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className="w-8 h-8 rounded-full bg-primary text-primary-foreground text-sm font-bold flex items-center justify-center hover:opacity-90 transition-opacity">
-                    {initials}
-                  </button>
+                <DropdownMenuTrigger className="w-8 h-8 rounded-full bg-primary text-primary-foreground text-sm font-bold flex items-center justify-center hover:opacity-90 transition-opacity outline-none">
+                  {initials}
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-40">
                   <DropdownMenuItem asChild>
-                    <Link href="/protected/settings" className="flex items-center gap-2">
+                    <Link href={`/${locale}/protected/settings`} className="flex items-center gap-2">
                       <Settings className="w-4 h-4" />
                       设置
                     </Link>

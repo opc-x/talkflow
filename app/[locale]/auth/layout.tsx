@@ -70,7 +70,7 @@ export default function AuthLayout({
         </div>
         
         <footer className="p-6 text-center text-sm text-muted-foreground">
-          <p>&copy; {new Date().getFullYear()} TalkFlow. 让口语流利起来。</p>
+          <p>&copy; 2026 TalkFlow. 让口语流利起来。</p>
         </footer>
       </div>
     </div>
