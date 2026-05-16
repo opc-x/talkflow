@@ -1,0 +1,78 @@
+{
+  "common": {
+    "appName": "TalkFlow",
+    "tagline": "Speak English Fluently",
+    "copyright": "© 2026 TalkFlow. Speak English Fluently.",
+    "login": "Login",
+    "logout": "Logout",
+    "signup": "Get Started Free",
+    "learnMore": "Learn More",
+    "startFree": "Start Free Practice",
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "back": "Back"
+  },
+  "landing": {
+    "badge": "AI Practice Based on Callan Method",
+    "headline": "Your AI English Speaking",
+    "headlineAccent": "Personal Companion",
+    "subtext": "Already speak some English? TalkFlow replaces your classroom teacher with AI, giving you high-frequency repetition practice anytime, anywhere.",
+    "cta": "Start Free Practice",
+    "howItWorks": "How It Works",
+    "step1Title": "Choose Your Level",
+    "step1Desc": "Tell us your current speaking level and start from where you are",
+    "step2Title": "Daily AI Conversations",
+    "step2Desc": "AI guides you with Callan Method for high-frequency repetition, simulating a real classroom",
+    "step3Title": "Track Your Progress",
+    "step3Desc": "Review pronunciation scores and correction tips after each session to track your fluency",
+    "ctaSection": "Ready to Start Speaking English?",
+    "ctaSubtext": "Join TalkFlow and let AI become your personal language companion",
+    "ctaButton": "Sign Up Free"
+  },
+  "auth": {
+    "loginTitle": "Welcome Back",
+    "loginDesc": "Sign in to your TalkFlow account",
+    "signupTitle": "Create Account",
+    "signupDesc": "Sign up to start your speaking practice journey",
+    "email": "Email",
+    "emailPlaceholder": "your@email.com",
+    "password": "Password",
+    "passwordPlaceholder": "At least 6 characters",
+    "confirmPassword": "Confirm Password",
+    "confirmPasswordPlaceholder": "Enter password again",
+    "loginButton": "Login",
+    "signupButton": "Sign Up Free",
+    "forgotPassword": "Forgot password?",
+    "hasAccount": "Already have an account?",
+    "noAccount": "Don't have an account?",
+    "loginLink": "Login now",
+    "signupLink": "Sign up now",
+    "terms": "By signing up you agree to our Terms of Service and Privacy Policy",
+    "signupSuccessTitle": "Successfully Signed Up!",
+    "signupSuccessDesc": "Please check your email",
+    "signupSuccessBody": "We've sent a confirmation email to your inbox. Please click the link to activate your account before signing in."
+  },
+  "nav": {
+    "home": "Home",
+    "map": "Map",
+    "practice": "Practice",
+    "review": "Review",
+    "profile": "Profile"
+  },
+  "dashboard": {
+    "title": "Home",
+    "todayTask": "Today's Task",
+    "startPractice": "Start Practice",
+    "streak": "Day Streak",
+    "days": "days"
+  },
+  "settings": {
+    "title": "Settings",
+    "reminder": "Study Reminder",
+    "speed": "Speech Speed",
+    "darkMode": "Dark Mode",
+    "logout": "Logout",
+    "profile": "Profile"
+  }
+}
