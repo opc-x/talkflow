@@ -1,251 +1,489 @@
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Mic, MessageCircle, Trophy, Zap, ArrowRight, Volume2, CheckCircle2 } from "lucide-react";
+"use client"
 
-function Logo() {
-  return (
-    <div className="flex items-center gap-2">
-      <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-        <Mic className="w-5 h-5 text-primary-foreground" />
-      </div>
-      <span className="font-bold text-xl text-foreground">TalkFlow</span>
-    </div>
-  );
+import Link from "next/link"
+import { useEffect, useRef, useState } from "react"
+import {
+  Mic,
+  CheckCircle2,
+  ArrowRight,
+  XCircle,
+} from "lucide-react"
+import { Button } from "@/components/ui/button"
+
+// ─── Scroll-reveal hook ──────────────────────────────────────────────────────
+function useInView(options?: IntersectionObserverInit) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [inView, setInView] = useState(false)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const obs = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        setInView(true)
+        obs.disconnect()
+      }
+    }, { threshold: 0.15, ...options })
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [])
+  return { ref, inView }
 }
 
-function FeatureCard({
-  icon: Icon,
-  title,
-  description,
-}: {
-  icon: React.ElementType;
-  title: string;
-  description: string;
-}) {
+function Section({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  const { ref, inView } = useInView()
   return (
-    <div className="p-6 rounded-2xl bg-card border border-border card-hover">
-      <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
-        <Icon className="w-6 h-6 text-primary" />
-      </div>
-      <h3 className="font-semibold text-lg mb-2 text-foreground">{title}</h3>
-      <p className="text-muted-foreground leading-relaxed">{description}</p>
+    <div
+      ref={ref}
+      className={`transition-all duration-500 ease-out ${inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"} ${className}`}
+    >
+      {children}
     </div>
-  );
+  )
 }
 
-function StepCard({
-  step,
-  title,
-  description,
-}: {
-  step: number;
-  title: string;
-  description: string;
-}) {
-  return (
-    <div className="flex gap-4">
-      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
-        {step}
-      </div>
-      <div>
-        <h3 className="font-semibold text-lg mb-1 text-foreground">{title}</h3>
-        <p className="text-muted-foreground leading-relaxed">{description}</p>
-      </div>
-    </div>
-  );
+// ─── Props ───────────────────────────────────────────────────────────────────
+interface HeroProps {
+  locale: string
 }
 
-export function Hero() {
+export function Hero({ locale }: HeroProps) {
+  const signUpHref = `/${locale}/auth/sign-up`
+  const loginHref  = `/${locale}/auth/login`
+
   return (
-    <div className="w-full">
-      {/* Navigation */}
-      <nav className="w-full border-b border-border">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Logo />
-          <div className="flex items-center gap-4">
-            <Link href="/auth/login">
-              <Button variant="ghost" className="text-muted-foreground hover:text-foreground">
-                登录
-              </Button>
-            </Link>
-            <Link href="/auth/sign-up">
-              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                免费开始
-              </Button>
-            </Link>
-          </div>
+    <div className="dark min-h-screen font-sans" style={{ backgroundColor: "#111111" }}>
+
+      {/* ── NAV ─────────────────────────────────────────────────────────── */}
+      <header className="sticky top-0 z-50 h-16 border-b border-border flex items-center px-4 sm:px-6" style={{ backgroundColor: "#111111" }}>
+        <div className="flex items-center gap-2 flex-1">
+          <Mic className="w-4 h-4 text-primary" />
+          <span className="font-bold text-lg text-foreground">TalkFlow</span>
         </div>
-      </nav>
+        <nav className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" asChild>
+            <Link href={loginHref} className="text-sm">登录</Link>
+          </Button>
+          <Button
+            size="sm"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium"
+            asChild
+          >
+            <Link href={signUpHref}>免费开始</Link>
+          </Button>
+        </nav>
+      </header>
 
-      {/* Hero Section */}
-      <section className="max-w-6xl mx-auto px-6 pt-20 pb-24">
-        <div className="text-center max-w-3xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
-            <Zap className="w-4 h-4" />
-            基于 Callan Method 的 AI 陪练
+      {/* ── HERO ────────────────────────────────────────────────────────── */}
+      <Section>
+        <section className="max-w-2xl mx-auto px-4 pt-20 pb-16 text-center flex flex-col items-center gap-6">
+          {/* Badge */}
+          <span className="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium"
+            style={{ backgroundColor: "rgba(16,185,129,0.10)", color: "#10B981" }}>
+            ⚡ AI 问，你答，说对为止
+          </span>
+
+          {/* Headline */}
+          <div className="flex flex-col gap-1">
+            <h1 className="text-5xl md:text-6xl font-bold text-foreground leading-tight text-balance">
+              脱口而出
+            </h1>
+            <h1 className="text-5xl md:text-6xl font-bold text-primary leading-tight text-balance">
+              靠练不靠背
+            </h1>
           </div>
-          
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight mb-6 text-balance">
-            你的 AI 英语口语
-            <span className="gradient-text block mt-2">私人语伴</span>
-          </h1>
-          
-          <p className="text-lg md:text-xl text-muted-foreground mb-8 leading-relaxed text-pretty max-w-2xl mx-auto">
-            已经能基础开口？TalkFlow 帮你用 AI 替代课堂老师陪练，
-            随时随地进行高频重复练习，让口语更流利。
+
+          {/* Sub-copy */}
+          <div className="flex flex-col gap-1 text-base leading-relaxed">
+            <p className="text-muted-foreground">学了多年英语，一开口还是卡？</p>
+            <p className="font-medium text-foreground">不是你笨——是从来没人逼你张嘴练到自动反应。</p>
+          </div>
+
+          <p className="text-sm text-muted-foreground leading-relaxed max-w-sm">
+            TalkFlow 的 AI 每天快速发问，你必须开口回答，说错立刻纠正，反复到不假思索说出来为止。
           </p>
-          
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/auth/sign-up">
-              <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 h-12 text-lg btn-glow">
-                开始免费练习
-                <ArrowRight className="ml-2 w-5 h-5" />
-              </Button>
-            </Link>
-            <Link href="#how-it-works">
-              <Button size="lg" variant="outline" className="h-12 text-lg border-border text-foreground hover:bg-muted">
-                了解更多
-              </Button>
-            </Link>
-          </div>
-        </div>
 
-        {/* Demo Preview */}
-        <div className="mt-16 max-w-4xl mx-auto">
-          <div className="rounded-2xl border border-border bg-card p-6 md:p-8 shadow-lg">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-3 h-3 rounded-full bg-destructive/50" />
-              <div className="w-3 h-3 rounded-full bg-accent/50" />
-              <div className="w-3 h-3 rounded-full bg-primary/50" />
-            </div>
-            
-            <div className="space-y-4">
-              {/* AI Question */}
-              <div className="flex gap-3">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <Volume2 className="w-5 h-5 text-primary" />
-                </div>
-                <div className="flex-1">
-                  <div className="bg-muted rounded-2xl rounded-tl-none px-4 py-3 inline-block">
-                    <p className="text-foreground font-medium">{"What's this?"}</p>
-                    <p className="text-muted-foreground text-sm mt-1">这是什么？</p>
-                  </div>
-                </div>
-              </div>
-              
-              {/* User Response */}
-              <div className="flex gap-3 justify-end">
-                <div className="flex-1 text-right">
-                  <div className="bg-primary text-primary-foreground rounded-2xl rounded-tr-none px-4 py-3 inline-block">
-                    <p className="font-medium">{"This is a pen."}</p>
-                  </div>
-                  <div className="flex items-center justify-end gap-2 mt-2">
-                    <CheckCircle2 className="w-4 h-4 text-primary" />
-                    <span className="text-sm text-primary font-medium">发音准确</span>
-                  </div>
-                </div>
-                <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0">
-                  <Mic className="w-5 h-5 text-accent" />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section className="bg-muted/50 py-24">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4 text-balance">
-              为什么选择 TalkFlow？
-            </h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto text-pretty">
-              专为已学过 Callan Method Stage 3+ 的学习者设计，填补课堂练习时间不足的空白
-            </p>
-          </div>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <FeatureCard
-              icon={MessageCircle}
-              title="AI 即时对话"
-              description="模拟真实 Callan 课堂对话，AI 快速提问，你快速回答，建立口语肌肉记忆"
-            />
-            <FeatureCard
-              icon={Mic}
-              title="实时语音反馈"
-              description="AI 实时评估你的发音和语法，给出精准纠正建议，让每次练习都有收获"
-            />
-            <FeatureCard
-              icon={Trophy}
-              title="游戏化激励"
-              description="完成练习获得积分和成就，保持学习热情，让坚持变得更容易"
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* How it Works */}
-      <section id="how-it-works" className="py-24">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4 text-balance">
-              如何开始？
-            </h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto text-pretty">
-              三步开始你的口语陪练之旅
-            </p>
-          </div>
-          
-          <div className="max-w-2xl mx-auto space-y-8">
-            <StepCard
-              step={1}
-              title="选择你的 Stage"
-              description="根据你在 Callan Method 的学习进度，选择对应的课程内容"
-            />
-            <div className="ml-5 h-8 border-l-2 border-dashed border-border" />
-            <StepCard
-              step={2}
-              title="开始对话练习"
-              description="AI 会按照 Callan 方法快速提问，你用语音回答，建立条件反射"
-            />
-            <div className="ml-5 h-8 border-l-2 border-dashed border-border" />
-            <StepCard
-              step={3}
-              title="查看反馈和进步"
-              description="每次练习后查看发音评分和纠正建议，追踪你的流利度提升"
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-24 bg-primary">
-        <div className="max-w-4xl mx-auto px-6 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-primary-foreground mb-4 text-balance">
-            准备好开口说英语了吗？
-          </h2>
-          <p className="text-primary-foreground/80 text-lg mb-8 max-w-xl mx-auto text-pretty">
-            加入 TalkFlow，让 AI 成为你的专属语伴，随时陪你练口语
-          </p>
-          <Link href="/auth/sign-up">
-            <Button size="lg" className="bg-white text-primary hover:bg-white/90 px-8 h-12 text-lg">
-              免费注册开始
-              <ArrowRight className="ml-2 w-5 h-5" />
+          {/* CTA */}
+          <div className="flex flex-col items-center gap-2 w-full">
+            <Button
+              size="lg"
+              className="w-full sm:w-auto h-12 px-8 text-base font-semibold bg-primary text-primary-foreground hover:bg-primary/90 animate-breathe"
+              asChild
+            >
+              <Link href={signUpHref}>开始练习，免费 →</Link>
             </Button>
-          </Link>
-        </div>
+            <p className="text-xs text-muted-foreground">免费开始，不需要信用卡</p>
+          </div>
+
+          {/* Feature pills */}
+          <div className="flex flex-wrap justify-center gap-2">
+            {["强迫开口输出", "实时纠正反馈", "系统化课程", "无需外教"].map((label) => (
+              <span
+                key={label}
+                className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1 text-xs text-muted-foreground"
+                style={{ backgroundColor: "#1f1f1f" }}
+              >
+                <CheckCircle2 className="w-3 h-3 text-primary" />
+                {label}
+              </span>
+            ))}
+          </div>
+
+          <p className="text-xs mt-1" style={{ color: "rgba(136,136,136,0.5)" }}>
+            由语言教练设计 · 经系统验证
+          </p>
+        </section>
+      </Section>
+
+      {/* ── DEMO CARD ───────────────────────────────────────────────────── */}
+      <Section>
+        <section className="px-4 pb-20">
+          <div
+            className="max-w-lg mx-auto rounded-2xl border border-border p-6"
+            style={{ backgroundColor: "#1a1a1a" }}
+          >
+            {/* Window chrome */}
+            <div className="flex items-center gap-2 mb-5">
+              <span className="w-3 h-3 rounded-full opacity-60" style={{ backgroundColor: "#EF4444" }} />
+              <span className="w-3 h-3 rounded-full opacity-60" style={{ backgroundColor: "#F59E0B" }} />
+              <span className="w-3 h-3 rounded-full opacity-60" style={{ backgroundColor: "#10B981" }} />
+              <span className="ml-3 text-xs text-muted-foreground">今日练习 · 第 3 课</span>
+            </div>
+
+            {/* Conversation */}
+            <div className="flex flex-col gap-3">
+              {/* AI asks */}
+              <div className="flex flex-col gap-0.5">
+                <p className="text-xs text-muted-foreground mb-1">AI</p>
+                <div
+                  className="self-start rounded-2xl rounded-tl-none px-4 py-3 text-sm text-foreground max-w-[80%]"
+                  style={{ backgroundColor: "#1f1f1f" }}
+                >
+                  What are you doing?
+                  <span className="block text-xs text-muted-foreground mt-0.5">你在做什么？</span>
+                </div>
+              </div>
+
+              {/* Wrong answer */}
+              <div className="flex flex-col gap-0.5 items-end">
+                <p className="text-xs text-muted-foreground mb-1">你</p>
+                <div
+                  className="self-end rounded-2xl rounded-tr-none px-4 py-3 text-sm max-w-[80%] border"
+                  style={{
+                    backgroundColor: "rgba(239,68,68,0.10)",
+                    borderColor: "rgba(239,68,68,0.20)"
+                  }}
+                >
+                  <span className="line-through text-muted-foreground">I am study English.</span>
+                  <span className="flex items-center gap-1 text-xs mt-1" style={{ color: "#EF4444" }}>
+                    <XCircle className="w-3 h-3" /> 语法有误，再说一次
+                  </span>
+                </div>
+              </div>
+
+              {/* Correct answer */}
+              <div className="flex flex-col gap-0.5 items-end">
+                <div
+                  className="self-end rounded-2xl rounded-tr-none px-4 py-3 text-sm max-w-[80%] text-primary-foreground"
+                  style={{ backgroundColor: "#10B981" }}
+                >
+                  I am studying English.
+                  <span className="flex items-center gap-1 text-xs mt-1 text-primary-foreground/80">
+                    <CheckCircle2 className="w-3 h-3" /> 正确，继续下一题
+                  </span>
+                </div>
+              </div>
+
+              {/* Next AI question */}
+              <div className="flex flex-col gap-0.5">
+                <p className="text-xs text-muted-foreground mb-1">AI</p>
+                <div
+                  className="self-start rounded-2xl rounded-tl-none px-4 py-3 text-sm text-foreground max-w-[85%]"
+                  style={{ backgroundColor: "#1f1f1f" }}
+                >
+                  What were you doing at 8pm?
+                  <span className="block text-xs text-muted-foreground mt-0.5">昨晚 8 点你在做什么？</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Stats */}
+            <div className="mt-5 pt-4 border-t border-border flex items-center gap-1 text-xs text-muted-foreground">
+              <span>↺ 已练 47 句 · 今日</span>
+              <span className="mx-2">|</span>
+              <span>连续 5 天</span>
+              <span className="ml-0.5 text-primary">🔥</span>
+            </div>
+          </div>
+        </section>
+      </Section>
+
+      {/* ── PAIN POINTS ─────────────────────────────────────────────────── */}
+      <Section>
+        <section className="py-20 px-4">
+          <div className="max-w-4xl mx-auto text-center">
+            <h2 className="text-2xl md:text-3xl font-bold text-foreground text-balance mb-3">
+              你不是没天赋，你只是从没被逼过
+            </h2>
+            <p className="font-medium text-foreground mb-10">
+              不是你不努力，是那些方法从来没有强迫你张嘴。
+            </p>
+
+            <div className="flex flex-col gap-4">
+              {[
+                { wrong: "背够多单词就能说话", right: "开口是肌肉，不练不会动" },
+                { wrong: "多听就能开口",       right: "输入 ≠ 输出，听懂 ≠ 说得出" },
+                { wrong: "学了语法就能组句子", right: "规则在脑子里，嘴还是跟不上" },
+              ].map(({ wrong, right }, i) => (
+                <div key={i} className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+                  <div
+                    className="rounded-xl px-4 py-3 text-sm text-muted-foreground line-through text-left"
+                    style={{ backgroundColor: "rgba(31,31,31,0.5)" }}
+                  >
+                    {wrong}
+                  </div>
+                  <ArrowRight className="w-4 h-4 text-primary shrink-0" />
+                  <div
+                    className="rounded-xl border px-4 py-3 text-sm text-foreground font-medium text-left"
+                    style={{
+                      backgroundColor: "rgba(16,185,129,0.08)",
+                      borderColor: "rgba(16,185,129,0.20)"
+                    }}
+                  >
+                    {right}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <p className="text-sm text-muted-foreground mt-10">
+              口语是条件反射。条件反射靠训练，不靠理解。
+            </p>
+          </div>
+        </section>
+      </Section>
+
+      {/* ── MECHANISM CARDS ─────────────────────────────────────────────── */}
+      <section style={{ backgroundColor: "#1a1a1a" }} className="py-20 px-4">
+        <Section>
+          <div className="max-w-5xl mx-auto">
+            <div className="text-center mb-12">
+              <h2 className="text-2xl md:text-3xl font-bold text-foreground text-balance mb-3">
+                口语流利的真相
+              </h2>
+              <p className="text-muted-foreground text-sm">
+                外教贵、时间少、开不了口——三个问题一次解决
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {[
+                {
+                  icon: "🎯",
+                  title: "强迫输出",
+                  desc: "AI 快速发问，你必须张嘴。没有选项，沉默 3 秒就再问一遍。",
+                },
+                {
+                  icon: "⚡️",
+                  title: "说错立刻纠",
+                  desc: "当场指出，当场重练。不是练完给评分，是说错了立刻再说。",
+                },
+                {
+                  icon: "🔁",
+                  title: "重复到自动",
+                  desc: "同一句话反复出现，直到不假思索说对。肌肉记忆。",
+                },
+              ].map(({ icon, title, desc }) => (
+                <div
+                  key={title}
+                  className="rounded-2xl border border-border p-6 flex flex-col gap-3"
+                  style={{ backgroundColor: "#111111" }}
+                >
+                  <span className="text-2xl">{icon}</span>
+                  <h3 className="font-semibold text-foreground">{title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Section>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-border py-12">
-        <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
-          <Logo />
-          <p className="text-muted-foreground text-sm">
-            &copy; 2026 TalkFlow. 让口语流利起来。
+      {/* ── COMPARISON TABLE ────────────────────────────────────────────── */}
+      <Section>
+        <section className="py-20 px-4">
+          <div className="max-w-2xl mx-auto">
+            <h2 className="text-2xl font-bold text-center text-foreground mb-8 text-balance">
+              为什么不是背单词 App？
+            </h2>
+
+            <ComparisonList />
+          </div>
+        </section>
+      </Section>
+
+      {/* ── FAQ ─────────────────────────────────────────────────────────── */}
+      <section style={{ backgroundColor: "#1a1a1a" }} className="py-20 px-4">
+        <Section>
+          <div className="max-w-2xl mx-auto">
+            <h2 className="text-2xl font-bold text-center text-foreground mb-8">
+              你可能想问
+            </h2>
+            <div className="flex flex-col gap-4">
+              {[
+                {
+                  q: "需要什么英语基础？",
+                  a: "能看懂英文句子、说过简单对话就够了。完全零基础不适合，已经流利的也不需要。",
+                },
+                {
+                  q: "和普通 AI 聊天有什么区别？",
+                  a: "普通 AI 你可以不开口、用中文、说错没人管。TalkFlow 不行——AI 会一直等你说对为止。",
+                },
+                {
+                  q: "每天需要练多久？",
+                  a: "15 分钟就够。关键是每天开口，不是一次练很久。",
+                },
+                {
+                  q: "免费能用什么？",
+                  a: "前几课完全免费，注册即可，不需要信用卡。",
+                },
+              ].map(({ q, a }) => (
+                <div
+                  key={q}
+                  className="rounded-2xl border border-border px-6 py-5"
+                  style={{ backgroundColor: "#111111" }}
+                >
+                  <p className="font-semibold text-sm text-foreground mb-2">{q}</p>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{a}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Section>
+      </section>
+
+      {/* ── FINAL CTA ───────────────────────────────────────────────────── */}
+      <section style={{ backgroundColor: "#10B981" }} className="py-20 px-4 text-center">
+        <Section>
+          <div className="max-w-xl mx-auto flex flex-col items-center gap-4">
+            <h2 className="text-3xl font-bold text-primary-foreground text-balance">
+              开口，就现在。
+            </h2>
+            <p className="text-primary-foreground/75 mb-4">
+              每天 15 分钟，AI 陪你练到脱口而出。
+            </p>
+            <Button
+              size="lg"
+              className="h-12 px-8 font-semibold animate-breathe"
+              style={{
+                backgroundColor: "#ffffff",
+                color: "#10B981",
+              }}
+              asChild
+            >
+              <Link href={signUpHref}>免费开始练习 →</Link>
+            </Button>
+          </div>
+        </Section>
+      </section>
+
+      {/* ── FOOTER ──────────────────────────────────────────────────────── */}
+      <footer className="border-t border-border py-10 px-4 sm:px-6">
+        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <Mic className="w-4 h-4 text-primary" />
+            <span className="font-bold text-foreground">TalkFlow</span>
+          </div>
+          <p className="text-sm text-muted-foreground text-center">
+            © 2026 TalkFlow · 脱口而出，靠练不靠背
           </p>
         </div>
       </footer>
     </div>
-  );
+  )
+}
+
+// ─── Comparison list (delayed reveal for TalkFlow row) ───────────────────────
+function ComparisonList() {
+  const items = [
+    {
+      isTalkFlow: false,
+      icon: "✗",
+      title: "背单词 App",
+      desc: "认识单词 ≠ 能开口说",
+    },
+    {
+      isTalkFlow: false,
+      icon: "✗",
+      title: "AI 聊天机器人",
+      desc: "随便聊不纠错，是娱乐不是练习",
+    },
+    {
+      isTalkFlow: false,
+      icon: "✗",
+      title: "线下外教",
+      desc: "每小时几百元，排班难",
+    },
+    {
+      isTalkFlow: true,
+      icon: "✓",
+      title: "TalkFlow",
+      desc: "强制输出 + 即时纠正 + 系统课程",
+    },
+  ]
+
+  const { ref, inView } = useInView()
+
+  return (
+    <div ref={ref} className="flex flex-col gap-3">
+      {items.map(({ isTalkFlow, icon, title, desc }, i) => (
+        <div
+          key={title}
+          className={`
+            rounded-xl px-5 py-3.5 flex items-center gap-3
+            transition-all duration-500 ease-out
+            ${inView
+              ? isTalkFlow
+                ? "opacity-100 translate-y-0"
+                : "opacity-60 translate-y-0"
+              : "opacity-0 translate-y-3"
+            }
+          `}
+          style={{
+            transitionDelay: inView
+              ? isTalkFlow ? "600ms" : `${i * 80}ms`
+              : "0ms",
+            ...(isTalkFlow
+              ? {
+                  border: "1px solid rgba(16,185,129,0.40)",
+                  backgroundColor: "rgba(16,185,129,0.05)",
+                  boxShadow: "0 0 16px rgba(16,185,129,0.25)",
+                }
+              : {
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  backgroundColor: "rgba(31,31,31,0.30)",
+                }),
+          }}
+        >
+          <span
+            className={`text-sm font-bold shrink-0 ${isTalkFlow ? "text-primary" : "text-muted-foreground"}`}
+          >
+            {icon}
+          </span>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2 min-w-0">
+            <span
+              className={`text-sm font-medium shrink-0 ${isTalkFlow ? "text-primary" : "text-muted-foreground line-through"}`}
+            >
+              {title}
+            </span>
+            <span className="hidden sm:inline text-muted-foreground">/</span>
+            <span
+              className={`text-sm ${isTalkFlow ? "text-foreground font-medium" : "text-muted-foreground"}`}
+            >
+              {desc}
+            </span>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
 }

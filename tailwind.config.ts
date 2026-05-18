@@ -57,6 +57,15 @@ export default {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      keyframes: {
+        breathe: {
+          "0%, 100%": { transform: "scale(1)" },
+          "50%": { transform: "scale(1.02)" },
+        },
+      },
+      animation: {
+        breathe: "breathe 2s ease-in-out infinite",
+      },
     },
   },
   plugins: [require("tailwindcss-animate")],
