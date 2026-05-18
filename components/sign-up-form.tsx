@@ -61,7 +61,7 @@ export function SignUpForm({
       <div className="space-y-2">
         <h1 className="text-2xl font-bold text-foreground">创建账户</h1>
         <p className="text-muted-foreground">
-          注册后开始你的口语陪练之旅
+          注册后直接开始练习，不需要信用卡
         </p>
       </div>
       
