@@ -6,9 +6,10 @@ import {
   Mic,
   CheckCircle2,
   ArrowRight,
-  XCircle,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { StatsBar, SocialProof } from "@/components/talkflow-stats-social"
+import { LandingDemo } from "@/components/landing-demo"
 
 // ─── Scroll-reveal hook ──────────────────────────────────────────────────────
 function useInView(options?: IntersectionObserverInit) {
@@ -40,6 +41,7 @@ function Section({ children, className = "" }: { children: React.ReactNode; clas
     </div>
   )
 }
+
 
 // ─── Props ───────────────────────────────────────────────────────────────────
 interface HeroProps {
@@ -134,88 +136,11 @@ export function Hero({ locale }: HeroProps) {
         </section>
       </Section>
 
-      {/* ── DEMO CARD ───────────────────────────────────────────────────── */}
-      <Section>
-        <section className="px-4 pb-20">
-          <div
-            className="max-w-lg mx-auto rounded-2xl border border-border p-6"
-            style={{ backgroundColor: "#1a1a1a" }}
-          >
-            {/* Window chrome */}
-            <div className="flex items-center gap-2 mb-5">
-              <span className="w-3 h-3 rounded-full opacity-60" style={{ backgroundColor: "#EF4444" }} />
-              <span className="w-3 h-3 rounded-full opacity-60" style={{ backgroundColor: "#F59E0B" }} />
-              <span className="w-3 h-3 rounded-full opacity-60" style={{ backgroundColor: "#10B981" }} />
-              <span className="ml-3 text-xs text-muted-foreground">今日练习 · 第 3 课</span>
-            </div>
+      {/* ── STATS BAR ───────────────────────────────────────────────────── */}
+      <StatsBar />
 
-            {/* Conversation */}
-            <div className="flex flex-col gap-3">
-              {/* AI asks */}
-              <div className="flex flex-col gap-0.5">
-                <p className="text-xs text-muted-foreground mb-1">AI</p>
-                <div
-                  className="self-start rounded-2xl rounded-tl-none px-4 py-3 text-sm text-foreground max-w-[80%]"
-                  style={{ backgroundColor: "#1f1f1f" }}
-                >
-                  What are you doing?
-                  <span className="block text-xs text-muted-foreground mt-0.5">你在做什么？</span>
-                </div>
-              </div>
-
-              {/* Wrong answer */}
-              <div className="flex flex-col gap-0.5 items-end">
-                <p className="text-xs text-muted-foreground mb-1">你</p>
-                <div
-                  className="self-end rounded-2xl rounded-tr-none px-4 py-3 text-sm max-w-[80%] border"
-                  style={{
-                    backgroundColor: "rgba(239,68,68,0.10)",
-                    borderColor: "rgba(239,68,68,0.20)"
-                  }}
-                >
-                  <span className="line-through text-muted-foreground">I am study English.</span>
-                  <span className="flex items-center gap-1 text-xs mt-1" style={{ color: "#EF4444" }}>
-                    <XCircle className="w-3 h-3" /> 语法有误，再说一次
-                  </span>
-                </div>
-              </div>
-
-              {/* Correct answer */}
-              <div className="flex flex-col gap-0.5 items-end">
-                <div
-                  className="self-end rounded-2xl rounded-tr-none px-4 py-3 text-sm max-w-[80%] text-primary-foreground"
-                  style={{ backgroundColor: "#10B981" }}
-                >
-                  I am studying English.
-                  <span className="flex items-center gap-1 text-xs mt-1 text-primary-foreground/80">
-                    <CheckCircle2 className="w-3 h-3" /> 正确，继续下一题
-                  </span>
-                </div>
-              </div>
-
-              {/* Next AI question */}
-              <div className="flex flex-col gap-0.5">
-                <p className="text-xs text-muted-foreground mb-1">AI</p>
-                <div
-                  className="self-start rounded-2xl rounded-tl-none px-4 py-3 text-sm text-foreground max-w-[85%]"
-                  style={{ backgroundColor: "#1f1f1f" }}
-                >
-                  What were you doing at 8pm?
-                  <span className="block text-xs text-muted-foreground mt-0.5">昨晚 8 点你在做什么？</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Stats */}
-            <div className="mt-5 pt-4 border-t border-border flex items-center gap-1 text-xs text-muted-foreground">
-              <span>↺ 已练 47 句 · 今日</span>
-              <span className="mx-2">|</span>
-              <span>连续 5 天</span>
-              <span className="ml-0.5 text-primary">🔥</span>
-            </div>
-          </div>
-        </section>
-      </Section>
+      {/* ── LANDING DEMO ────────────────────────────────────────────────── */}
+      <LandingDemo />
 
       {/* ── PAIN POINTS ─────────────────────────────────────────────────── */}
       <Section>
@@ -320,6 +245,9 @@ export function Hero({ locale }: HeroProps) {
           </div>
         </section>
       </Section>
+
+      {/* ── SOCIAL PROOF ────────────────────────────────────────────────── */}
+      <SocialProof />
 
       {/* ── FAQ ─────────────────────────────────────────────────────────── */}
       <section style={{ backgroundColor: "#1a1a1a" }} className="py-20 px-4">

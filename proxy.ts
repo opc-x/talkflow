@@ -36,13 +36,18 @@ export async function proxy(request: NextRequest) {
     },
   );
 
-  const { data } = await supabase.auth.getClaims();
-  const user = data?.claims;
-
   const { pathname } = request.nextUrl;
   const localeMatch = pathname.match(/^\/(zh|en)(\/|$)/);
   const locale = localeMatch ? localeMatch[1] : routing.defaultLocale;
   const isProtected = pathname.includes("/protected") || pathname.includes("/onboarding");
+
+  // Dev bypass: skip auth check entirely
+  if (process.env.DEV_BYPASS_AUTH === "true") {
+    return supabaseResponse;
+  }
+
+  const { data } = await supabase.auth.getClaims();
+  const user = data?.claims;
 
   if (!user && isProtected) {
     const url = request.nextUrl.clone();
