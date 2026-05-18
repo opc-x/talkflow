@@ -58,7 +58,7 @@ export default async function MapPage({ searchParams }: Props) {
       <div className="px-4 pt-6 pb-4">
         <h1 className="text-2xl font-bold text-foreground">知识地图</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Callan Method · 12册 · 191课 · 7,250词
+          系统课程 · 12册 · 191课 · 7,250词
         </p>
       </div>
 

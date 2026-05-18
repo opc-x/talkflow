@@ -14,7 +14,7 @@ const defaultUrl = process.env.VERCEL_URL
 export const metadata: Metadata = {
   metadataBase: new URL(defaultUrl),
   title: "TalkFlow - AI 英语口语陪练",
-  description: "基于 Callan Method 的 AI 英语口语陪练应用，让你随时随地开口说英语",
+  description: "AI 驱动的英语口语陪练应用，强迫输出、即时纠正，让你随时随地开口说英语",
 };
 
 const geistSans = Geist({
