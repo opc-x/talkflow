@@ -24,8 +24,8 @@ async function getStreak(userId: string) {
   if (!data || data.length === 0) return 0;
 
   const dates = [
-    ...new Set(data.map((r) => r.created_at.slice(0, 10))),
-  ].sort((a, b) => b.localeCompare(a));
+    ...new Set((data as { created_at: string }[]).map((r) => r.created_at.slice(0, 10))),
+  ].sort((a: string, b: string) => b.localeCompare(a));
 
   let streak = 0;
   const today = new Date().toISOString().slice(0, 10);
@@ -89,17 +89,14 @@ export default async function ProtectedLayout({
   const currentLesson = user ? await getCurrentLesson(user.id) : null;
   const initials = (user?.email ?? "?")[0].toUpperCase();
 
-  // 中间麦克风按钮跳转到当前课程
   const micHref = currentLesson
     ? `/${locale}/protected/learn/${currentLesson.book_num}/${currentLesson.lesson_num}`
     : `/${locale}/onboarding`;
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      {/* Desktop Top Nav - 简化版，无导航链接 */}
       <nav className="sticky top-0 z-50 h-16 border-b border-border bg-background/80 backdrop-blur-sm">
         <div className="max-w-5xl mx-auto px-4 h-full flex items-center justify-between">
-          {/* Logo */}
           <Link
             href={`/${locale}/protected`}
             className="flex items-center gap-1.5 font-bold text-lg text-primary shrink-0"
@@ -108,7 +105,6 @@ export default async function ProtectedLayout({
             TalkFlow
           </Link>
 
-          {/* Right: streak + theme + avatar dropdown */}
           <div className="flex items-center gap-2">
             {streak > 0 && (
               <span className="flex items-center gap-1 bg-orange-100 dark:bg-orange-950 text-orange-600 dark:text-orange-400 rounded-full px-2.5 py-1 text-xs font-medium">
@@ -148,40 +144,47 @@ export default async function ProtectedLayout({
 
       <div className="flex-1 flex flex-col pb-20 md:pb-0">{children}</div>
 
-      {/* Mobile Bottom Tab Bar - 3项：首页 + 中间凸起麦克风 + 复习 */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border">
-        <div className="flex items-end justify-around h-16 px-4">
-          {/* 首页 */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background">
+        <div className="relative mx-auto flex h-16 max-w-[430px] items-center justify-around px-4">
           <Link
             href={`/${locale}/protected`}
-            className="flex flex-col items-center justify-center gap-1 py-2 px-4 text-muted-foreground hover:text-foreground transition-colors"
+            className="flex flex-1 flex-col items-center justify-center gap-1 py-2 text-primary transition-colors"
           >
-            <Home className="w-5 h-5" />
+            <Home className="h-5 w-5" />
             <span className="text-xs">首页</span>
           </Link>
 
-          {/* 中间凸起麦克风按钮 */}
+          <div className="flex-1" />
+
           <Link
             href={micHref}
-            className="relative -top-4 flex items-center justify-center w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors"
+            aria-label="开口练习"
+            className="absolute left-1/2 top-0 flex h-14 w-14 -translate-x-1/2 -translate-y-5 animate-breathe items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[0_0_0_4px_hsl(var(--background)),0_0_24px_rgba(16,185,129,0.6)] transition-colors hover:bg-primary/90"
           >
-            <Mic className="w-6 h-6" />
+            <Mic className="h-6 w-6" />
           </Link>
 
-          {/* 复习（带 badge） */}
           <Link
             href={`/${locale}/protected/review`}
-            className="relative flex flex-col items-center justify-center gap-1 py-2 px-4 text-muted-foreground hover:text-foreground transition-colors"
+            className="relative flex flex-1 flex-col items-center justify-center gap-1 py-2 text-muted-foreground transition-colors hover:text-foreground"
           >
             <div className="relative">
-              <RotateCcw className="w-5 h-5" />
+              <RotateCcw className="h-5 w-5" />
               {reviewCount > 0 && (
-                <span className="absolute -top-1.5 -right-2 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold px-1">
+                <span className="absolute -right-2 -top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
                   {reviewCount > 99 ? "99+" : reviewCount}
                 </span>
               )}
             </div>
             <span className="text-xs">复习</span>
+          </Link>
+
+          <Link
+            href={`/${locale}/protected/me`}
+            className="flex flex-1 flex-col items-center justify-center gap-1 py-2 text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <User className="h-5 w-5" />
+            <span className="text-xs">我的</span>
           </Link>
         </div>
       </div>

@@ -5,6 +5,8 @@ import Link from "next/link";
 import { Flame, BookOpen, Target, ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+type SessionRecordRow = { created_at: string };
+
 async function getDetailedStats(userId: string) {
   const supabase = await createClient();
 
@@ -20,9 +22,10 @@ async function getDetailedStats(userId: string) {
   // Calculate streak
   let streak = 0;
   if (sessions && sessions.length > 0) {
+    const sessionRows = sessions as SessionRecordRow[];
     const dates = [
-      ...new Set(sessions.map((s) => s.created_at.slice(0, 10))),
-    ].sort((a, b) => b.localeCompare(a));
+      ...new Set(sessionRows.map((s) => s.created_at.slice(0, 10))),
+    ].sort((a: string, b: string) => b.localeCompare(a));
     const todayStr = new Date().toISOString().slice(0, 10);
     const yestStr = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
     if (dates[0] === todayStr || dates[0] === yestStr) {
@@ -64,7 +67,7 @@ async function getDetailedStats(userId: string) {
   // Build heatmap data
   const heatmapData: Record<string, number> = {};
   if (sessions) {
-    sessions.forEach((s) => {
+    (sessions as SessionRecordRow[]).forEach((s) => {
       const date = s.created_at.slice(0, 10);
       heatmapData[date] = (heatmapData[date] || 0) + 1;
     });

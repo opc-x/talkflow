@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -68,7 +69,7 @@ export default function SettingsPage() {
         <div className="flex flex-col gap-1.5">
           <Label className="text-sm">密码</Label>
           <Button variant="outline" asChild className="rounded-xl w-fit">
-            <a href="/auth/update-password">修改密码 →</a>
+            <Link href="/auth/update-password">修改密码 →</Link>
           </Button>
         </div>
       </Card>

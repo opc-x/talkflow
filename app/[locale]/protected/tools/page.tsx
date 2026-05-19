@@ -144,7 +144,7 @@ function GrammarReference() {
   const [notes, setNotes] = useState<{ title: string; body: string; book_num: number; lesson_num: number }[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [expanded, setExpanded] = useState<number | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
 
   const cats = ["全部", "时态", "情态动词", "冠词", "介词", "疑问词", "比较级"];
 

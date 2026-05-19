@@ -15,6 +15,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { LogoutButton } from "@/components/logout-button";
 
+type SessionRecordRow = { created_at: string };
+
 async function getUserStats(userId: string) {
   const supabase = await createClient();
   
@@ -28,9 +30,10 @@ async function getUserStats(userId: string) {
 
   let streak = 0;
   if (sessions && sessions.length > 0) {
+    const sessionRows = sessions as SessionRecordRow[];
     const dates = [
-      ...new Set(sessions.map((s) => s.created_at.slice(0, 10))),
-    ].sort((a, b) => b.localeCompare(a));
+      ...new Set(sessionRows.map((s) => s.created_at.slice(0, 10))),
+    ].sort((a: string, b: string) => b.localeCompare(a));
     const todayStr = new Date().toISOString().slice(0, 10);
     const yestStr = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
     if (dates[0] === todayStr || dates[0] === yestStr) {
