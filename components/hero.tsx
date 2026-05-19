@@ -6,6 +6,8 @@ import {
   Mic,
   CheckCircle2,
   ArrowRight,
+  Check,
+  Star,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { StatsBar, SocialProof } from "@/components/talkflow-stats-social"
@@ -248,6 +250,120 @@ export function Hero({ locale }: HeroProps) {
 
       {/* ── SOCIAL PROOF ────────────────────────────────────────────────── */}
       <SocialProof />
+
+      {/* ── PRICING ─────────────────────────────────────────────────────── */}
+      <Section>
+        <section className="py-20 px-4" id="pricing">
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center mb-12">
+              <h2 className="text-2xl md:text-3xl font-bold text-foreground text-balance mb-3">
+                选择适合你的计划
+              </h2>
+              <p className="text-muted-foreground text-sm">
+                从免费开始，随时升级
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* 免费 */}
+              <div
+                className="rounded-2xl border border-border p-6 flex flex-col"
+                style={{ backgroundColor: "#1a1a1a" }}
+              >
+                <div className="text-sm text-muted-foreground mb-2">免费</div>
+                <div className="flex items-baseline gap-1 mb-4">
+                  <span className="text-3xl font-bold text-foreground">0</span>
+                  <span className="text-muted-foreground">元</span>
+                </div>
+                <p className="text-sm text-muted-foreground mb-6">
+                  入门 24 课，体验完整学习流程
+                </p>
+                <ul className="flex flex-col gap-3 mb-6 flex-1">
+                  {["入门阶段 24 课", "AI 实时纠错", "基础复习系统"].map((item) => (
+                    <li key={item} className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Check className="w-4 h-4 text-primary shrink-0" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  asChild
+                >
+                  <Link href={signUpHref}>免费开始</Link>
+                </Button>
+              </div>
+
+              {/* 日常对话 - 推荐 */}
+              <div
+                className="rounded-2xl border-2 p-6 flex flex-col relative"
+                style={{ 
+                  backgroundColor: "rgba(16,185,129,0.05)",
+                  borderColor: "rgba(16,185,129,0.40)"
+                }}
+              >
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-primary text-primary-foreground text-xs font-semibold px-3 py-1 rounded-full">
+                  <Star className="w-3 h-3" />
+                  推荐
+                </div>
+                <div className="text-sm text-primary mb-2">日常对话</div>
+                <div className="flex items-baseline gap-1 mb-4">
+                  <span className="text-3xl font-bold text-foreground">28</span>
+                  <span className="text-muted-foreground">元/月</span>
+                </div>
+                <p className="text-sm text-muted-foreground mb-6">
+                  适合日常交流，覆盖生活场景
+                </p>
+                <ul className="flex flex-col gap-3 mb-6 flex-1">
+                  {["全部日常对话课程", "AI 实时纠错", "完整复习系统", "学习数据分析"].map((item) => (
+                    <li key={item} className="flex items-center gap-2 text-sm text-foreground">
+                      <Check className="w-4 h-4 text-primary shrink-0" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+                <Button
+                  className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+                  asChild
+                >
+                  <Link href={signUpHref}>选择此计划</Link>
+                </Button>
+              </div>
+
+              {/* 完整精通 */}
+              <div
+                className="rounded-2xl border border-border p-6 flex flex-col"
+                style={{ backgroundColor: "#1a1a1a" }}
+              >
+                <div className="text-sm text-muted-foreground mb-2">完整精通</div>
+                <div className="flex items-baseline gap-1 mb-4">
+                  <span className="text-3xl font-bold text-foreground">48</span>
+                  <span className="text-muted-foreground">元/月</span>
+                </div>
+                <p className="text-sm text-muted-foreground mb-6">
+                  191 课完整体系，从 A1 到 C2
+                </p>
+                <ul className="flex flex-col gap-3 mb-6 flex-1">
+                  {["全部 191 课内容", "职场流利 + 高级表达", "AI 实时纠错", "完整复习系统", "学习数据分析", "优先客服支持"].map((item) => (
+                    <li key={item} className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Check className="w-4 h-4 text-primary shrink-0" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  asChild
+                >
+                  <Link href={signUpHref}>选择此计划</Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </Section>
 
       {/* ── FAQ ─────────────────────────────────────────────────────────── */}
       <section style={{ backgroundColor: "#1a1a1a" }} className="py-20 px-4">
