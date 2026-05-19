@@ -79,62 +79,133 @@ export function Hero({ locale }: HeroProps) {
 
       {/* ── HERO ────────────────────────────────────────────────────────── */}
       <Section>
-        <section className="max-w-2xl mx-auto px-4 pt-20 pb-16 text-center flex flex-col items-center gap-6">
-          {/* Badge */}
-          <span className="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium"
-            style={{ backgroundColor: "rgba(16,185,129,0.10)", color: "#10B981" }}>
-            ⚡ AI 问，你答，说对为止
-          </span>
-
-          {/* Headline */}
-          <div className="flex flex-col gap-1">
-            <h1 className="text-5xl md:text-6xl font-bold text-foreground leading-tight text-balance">
-              脱口而出
-            </h1>
-            <h1 className="text-5xl md:text-6xl font-bold text-primary leading-tight text-balance">
-              靠练不靠背
-            </h1>
+        <section className="relative overflow-hidden">
+          {/* Background glow effects */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <div 
+              className="absolute top-1/4 -left-32 w-96 h-96 rounded-full blur-3xl opacity-20"
+              style={{ background: "radial-gradient(circle, #10B981 0%, transparent 70%)" }}
+            />
+            <div 
+              className="absolute top-1/3 -right-32 w-80 h-80 rounded-full blur-3xl opacity-15"
+              style={{ background: "radial-gradient(circle, #10B981 0%, transparent 70%)" }}
+            />
           </div>
 
-          {/* Sub-copy */}
-          <div className="flex flex-col gap-1 text-base leading-relaxed">
-            <p className="text-muted-foreground">学了多年英语，一开口还是卡？</p>
-            <p className="font-medium text-foreground">不是你笨——是从来没人逼你张嘴练到自动反应。</p>
+          <div className="max-w-6xl mx-auto px-4 pt-16 pb-12 md:pt-20 md:pb-16">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+              {/* Left: Text content */}
+              <div className="text-center lg:text-left flex flex-col items-center lg:items-start gap-5">
+                {/* Badge */}
+                <span className="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium"
+                  style={{ backgroundColor: "rgba(16,185,129,0.10)", color: "#10B981" }}>
+                  AI 问，你答，说对为止
+                </span>
+
+                {/* Headline */}
+                <div className="flex flex-col gap-1">
+                  <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-foreground leading-tight text-balance">
+                    脱口而出
+                  </h1>
+                  <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-primary leading-tight text-balance">
+                    靠练不靠背
+                  </h1>
+                </div>
+
+                {/* Sub-copy */}
+                <div className="flex flex-col gap-1 text-base leading-relaxed">
+                  <p className="text-muted-foreground">学了多年英语，一开口还是卡？</p>
+                  <p className="font-medium text-foreground">不是你笨——是从来没人逼你张嘴练到自动反应。</p>
+                </div>
+
+                <p className="text-sm text-muted-foreground leading-relaxed max-w-md">
+                  TalkFlow 的 AI 每天快速发问，你必须开口回答，说错立刻纠正，反复到不假思索说出来为止。
+                </p>
+
+                {/* CTA */}
+                <div className="flex flex-col items-center lg:items-start gap-2 w-full sm:w-auto">
+                  <Button
+                    size="lg"
+                    className="w-full sm:w-auto h-12 px-8 text-base font-semibold bg-primary text-primary-foreground hover:bg-primary/90 animate-breathe"
+                    asChild
+                  >
+                    <Link href={signUpHref}>开始练习，免费 →</Link>
+                  </Button>
+                  <p className="text-xs text-muted-foreground">免费开始，不需要信用卡</p>
+                </div>
+
+                {/* Feature pills */}
+                <div className="flex flex-wrap justify-center lg:justify-start gap-2">
+                  {["强迫开口输出", "实时纠正反馈", "系统化课程", "无需外教"].map((label) => (
+                    <span
+                      key={label}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1 text-xs text-muted-foreground"
+                      style={{ backgroundColor: "#1f1f1f" }}
+                    >
+                      <CheckCircle2 className="w-3 h-3 text-primary" />
+                      {label}
+                    </span>
+                  ))}
+                </div>
+
+                <p className="text-xs" style={{ color: "rgba(136,136,136,0.5)" }}>
+                  由语言教练设计 · 经系统验证
+                </p>
+              </div>
+
+              {/* Right: Phone mockup with scene */}
+              <div className="relative flex justify-center lg:justify-end">
+                {/* Background scene image */}
+                <div className="absolute inset-0 flex items-center justify-center opacity-30 blur-sm">
+                  <img 
+                    src="/images/hero-person.jpg" 
+                    alt="" 
+                    className="w-full h-full object-cover rounded-3xl"
+                  />
+                </div>
+                {/* Phone mockup */}
+                <div className="relative z-10">
+                  <div 
+                    className="relative w-64 sm:w-72 md:w-80 rounded-[2.5rem] p-2 shadow-2xl"
+                    style={{ 
+                      background: "linear-gradient(145deg, #2a2a2a 0%, #1a1a1a 100%)",
+                      boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 40px rgba(16, 185, 129, 0.15)"
+                    }}
+                  >
+                    {/* Phone screen */}
+                    <div className="rounded-[2rem] overflow-hidden bg-[#111111]">
+                      <img 
+                        src="/images/hero-phone-mockup.jpg" 
+                        alt="TalkFlow App 界面展示" 
+                        className="w-full aspect-[9/19] object-cover"
+                      />
+                    </div>
+                    {/* Phone notch */}
+                    <div className="absolute top-4 left-1/2 -translate-x-1/2 w-20 h-5 bg-black rounded-full" />
+                  </div>
+                  {/* Floating badges */}
+                  <div 
+                    className="absolute -left-4 top-1/4 bg-[#1a1a1a] border border-border rounded-xl px-3 py-2 shadow-lg animate-float"
+                    style={{ animationDelay: "0s" }}
+                  >
+                    <p className="text-xs text-primary font-medium">AI 实时纠正</p>
+                  </div>
+                  <div 
+                    className="absolute -right-4 top-1/2 bg-[#1a1a1a] border border-border rounded-xl px-3 py-2 shadow-lg animate-float"
+                    style={{ animationDelay: "0.5s" }}
+                  >
+                    <p className="text-xs text-foreground font-medium">每天 15 分钟</p>
+                  </div>
+                  <div 
+                    className="absolute -left-2 bottom-1/4 bg-[#1a1a1a] border border-border rounded-xl px-3 py-2 shadow-lg animate-float"
+                    style={{ animationDelay: "1s" }}
+                  >
+                    <p className="text-xs text-muted-foreground">脱口而出</p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-
-          <p className="text-sm text-muted-foreground leading-relaxed max-w-sm">
-            TalkFlow 的 AI 每天快速发问，你必须开口回答，说错立刻纠正，反复到不假思索说出来为止。
-          </p>
-
-          {/* CTA */}
-          <div className="flex flex-col items-center gap-2 w-full">
-            <Button
-              size="lg"
-              className="w-full sm:w-auto h-12 px-8 text-base font-semibold bg-primary text-primary-foreground hover:bg-primary/90 animate-breathe"
-              asChild
-            >
-              <Link href={signUpHref}>开始练习，免费 →</Link>
-            </Button>
-            <p className="text-xs text-muted-foreground">免费开始，不需要信用卡</p>
-          </div>
-
-          {/* Feature pills */}
-          <div className="flex flex-wrap justify-center gap-2">
-            {["强迫开口输出", "实时纠正反馈", "系统化课程", "无需外教"].map((label) => (
-              <span
-                key={label}
-                className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1 text-xs text-muted-foreground"
-                style={{ backgroundColor: "#1f1f1f" }}
-              >
-                <CheckCircle2 className="w-3 h-3 text-primary" />
-                {label}
-              </span>
-            ))}
-          </div>
-
-          <p className="text-xs mt-1" style={{ color: "rgba(136,136,136,0.5)" }}>
-            由语言教练设计 · 经系统验证
-          </p>
         </section>
       </Section>
 
