@@ -71,7 +71,7 @@ export default async function ProgressPage() {
   const vocabCoverPct = Math.round((lessonsDone / totalLessons) * 100);
 
   // Stage breakdown (simplified: each book = 1 stage, ~30 lessons)
-  const stageRows = books?.map((book) => {
+  const stageRows = (books as Array<{ id: string; book_num: number; stage: number; lesson_start: number; lesson_end: number; cefr_level?: string | null }> | null)?.map((book) => {
     // Estimate lessons done in this book range
     // We don't have per-lesson book mapping here easily, use lesson range
     const bookDone = progress?.lessons_done?.filter(

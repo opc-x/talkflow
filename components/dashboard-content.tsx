@@ -1,12 +1,9 @@
 "use client"
 
-import { useState } from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
-import CountUp from "react-countup"
-import { Mic, ArrowRight, Flame, BookOpen, RotateCcw } from "lucide-react"
+import { Mic } from "lucide-react"
 
-// ── Framer Motion variants ──────────────────────────────────────────────────
 const container = {
   hidden: {},
   show: { transition: { staggerChildren: 0.08 } },
@@ -20,37 +17,18 @@ const item = {
   },
 }
 
-// ── Hover card helper ───────────────────────────────────────────────────────
-function useHover() {
-  const [hovered, setHovered] = useState(false)
-  return {
-    hovered,
-    handlers: {
-      onMouseEnter: () => setHovered(true),
-      onMouseLeave: () => setHovered(false),
-    },
-  }
-}
+const DISPLAY_STAGES = [
+  { index: 1, name: "入门",     emoji: "🌱" },
+  { index: 2, name: "日常对话", emoji: "💬" },
+  { index: 3, name: "职场流利", emoji: "💼" },
+  { index: 4, name: "高级表达", emoji: "🎯" },
+]
 
-function hoverStyle(hovered: boolean) {
-  return {
-    transform: hovered ? "translateY(-4px) scale(1.01)" : "translateY(0) scale(1)",
-    boxShadow: hovered
-      ? "0 16px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(16,185,129,0.20)"
-      : "none",
-    transition:
-      "transform 280ms cubic-bezier(0.16,1,0.3,1), box-shadow 280ms cubic-bezier(0.16,1,0.3,1)",
-  }
-}
-
-// ── Props ───────────────────────────────────────────────────────────────────
 interface DashboardContentProps {
   displayName: string
   hasProgress: boolean
-  streak: number
   lessonsDone: number
   reviewCount: number
-  currentBook?: number
   currentLesson?: number
   vocabPreview?: string | null
   resumeHref: string
@@ -58,16 +36,18 @@ interface DashboardContentProps {
   reviewHref: string
   greeting: string
   dateStr: string
+  stageName: string
+  stageEmoji: string
+  stagePct: number
+  stageIndex: number
+  locale: string
 }
 
-// ── Component ───────────────────────────────────────────────────────────────
 export function DashboardContent({
   displayName,
   hasProgress,
-  streak,
   lessonsDone,
   reviewCount,
-  currentBook,
   currentLesson,
   vocabPreview,
   resumeHref,
@@ -75,19 +55,12 @@ export function DashboardContent({
   reviewHref,
   greeting,
   dateStr,
+  stageName,
+  stageEmoji,
+  stagePct,
+  stageIndex,
+  locale,
 }: DashboardContentProps) {
-  const progressPct = Math.min(((lessonsDone % 16) / 16) * 100, 100)
-
-  const mainCard = useHover()
-  const task1 = useHover()
-  const task2 = useHover()
-  const stat1 = useHover()
-  const stat2 = useHover()
-  const stat3 = useHover()
-
-  const streakBadge =
-    streak >= 7 ? `🏆 连续 ${streak} 天！` : `再坚持 ${7 - streak} 天拿徽章 🎯`
-
   return (
     <>
       <style>{`
@@ -95,22 +68,13 @@ export function DashboardContent({
           0%   { transform: translateX(-100%) }
           100% { transform: translateX(200%) }
         }
-        .cta-btn::after {
+        .cta-shimmer::after {
           content: '';
           position: absolute;
           inset: 0;
-          background: linear-gradient(
-            105deg,
-            transparent 40%,
-            rgba(255,255,255,0.18) 50%,
-            transparent 60%
-          );
+          background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.18) 50%, transparent 60%);
           animation: shimmer 2.5s ease infinite;
           pointer-events: none;
-        }
-        @keyframes flame-pulse {
-          0%,100% { transform: scale(1) }
-          50%      { transform: scale(1.25) }
         }
       `}</style>
 
@@ -118,252 +82,150 @@ export function DashboardContent({
         variants={container}
         initial="hidden"
         animate="show"
+        className="max-w-[480px] mx-auto px-5 pt-6 pb-24 min-h-full"
         style={{
-          minHeight: "100%",
           background:
-            "radial-gradient(ellipse 120% 40% at 50% 0%, rgba(16,185,129,0.07) 0%, transparent 50%), #111111",
-          padding: "24px 20px 96px",
-          maxWidth: 480,
-          margin: "0 auto",
+            "radial-gradient(ellipse 120% 40% at 50% 0%, rgba(16,185,129,0.07) 0%, transparent 50%)",
         }}
       >
-        {/* ── 1. Greeting ──────────────────────────────────────────────────── */}
-        <motion.div variants={item} style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 12, color: "rgba(245,245,245,0.38)", marginBottom: 4 }}>
-            {dateStr}
+        {/* A. Header */}
+        <motion.div variants={item} className="mb-5">
+          <div className="text-xs text-muted-foreground mb-1">{dateStr}</div>
+          <div className="text-2xl font-black text-foreground">
+            {greeting}，{displayName}
           </div>
-          <div style={{ fontSize: 28, fontWeight: 900, color: "#F5F5F5" }}>
-            {greeting}，{displayName}！
+          {/* D6 Slot: <SubscriptionBadge /> from Issue #12 */}
+        </motion.div>
+
+        {/* B. Main card */}
+        <motion.div variants={item} className="mb-5">
+          {hasProgress ? (
+            <div className="bg-primary/5 border border-primary/30 rounded-2xl p-6">
+              <div className="flex justify-between items-center mb-3">
+                <span className="text-sm font-semibold text-foreground">今日练习</span>
+                <span className="text-xs text-muted-foreground">约15分钟</span>
+              </div>
+              <div className="text-xl font-bold text-foreground mb-2">
+                {stageEmoji} {stageName} · 第{currentLesson}课
+              </div>
+              {vocabPreview && (
+                <div className="text-sm text-muted-foreground mb-2">{vocabPreview}</div>
+              )}
+              <div className="text-xs text-muted-foreground/70 mb-4">
+                🤖 AI实时纠错 · 20句口语练习
+              </div>
+              <Link
+                href={resumeHref}
+                className="cta-shimmer relative overflow-hidden flex items-center justify-center gap-2 w-full bg-primary text-primary-foreground rounded-xl py-3 font-semibold text-sm hover:opacity-90 transition-opacity"
+              >
+                <Mic className="w-4 h-4" />
+                🎤 开口练习 →
+              </Link>
+            </div>
+          ) : (
+            <div className="bg-muted/30 border border-border rounded-2xl p-6">
+              <div className="text-xl font-bold text-foreground mb-2">
+                开始你的英语旅程
+              </div>
+              <div className="text-sm text-muted-foreground mb-4">
+                3分钟口语测评，AI找到你的起点
+              </div>
+              <Link
+                href={onboardingHref}
+                className="cta-shimmer relative overflow-hidden flex items-center justify-center w-full bg-primary text-primary-foreground rounded-xl py-3 font-semibold text-sm hover:opacity-90 transition-opacity"
+              >
+                开始测评 →
+              </Link>
+            </div>
+          )}
+        </motion.div>
+
+        {/* C. Stage progress */}
+        <motion.div variants={item} className="mb-5">
+          <div className="text-sm font-medium text-foreground mb-3">我的进度</div>
+          <div className="flex items-center overflow-x-auto no-scrollbar pb-1">
+            {DISPLAY_STAGES.map((stageItem, i) => {
+              const isCompleted = stageIndex > stageItem.index
+              const isCurrent = stageIndex === stageItem.index
+              const isFuture = stageIndex < stageItem.index
+              return (
+                <div key={stageItem.index} className="flex items-center shrink-0">
+                  {i > 0 && (
+                    <span className="text-xs text-muted-foreground mx-1.5">→</span>
+                  )}
+                  {isCompleted && (
+                    <div className="flex items-center gap-1">
+                      <span className="w-5 h-5 rounded-full bg-primary/20 text-primary text-xs flex items-center justify-center">
+                        ✓
+                      </span>
+                      <span className="text-xs text-primary">{stageItem.name}</span>
+                    </div>
+                  )}
+                  {isCurrent && (
+                    <div className="border border-primary rounded-xl px-3 py-2">
+                      <div className="flex items-center justify-between gap-3 mb-1">
+                        <span className="text-xs font-semibold text-primary whitespace-nowrap">
+                          {stageItem.emoji} {stageItem.name}
+                        </span>
+                        <span className="text-xs text-primary">{stagePct}%</span>
+                      </div>
+                      <div className="h-1 bg-muted rounded-full overflow-hidden w-20">
+                        <div
+                          className="h-full bg-primary rounded-full transition-all duration-700"
+                          style={{ width: `${stagePct}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                  {isFuture && (
+                    <div className="flex items-center gap-1">
+                      <span className="w-5 h-5 rounded-full bg-muted text-muted-foreground text-xs flex items-center justify-center">
+                        ○
+                      </span>
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">
+                        {stageItem.name}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </div>
         </motion.div>
 
-        {/* ── 2. Streak banner ─────────────────────────────────────────────── */}
-        {streak > 0 && (
-          <motion.div
-            variants={item}
-            style={{
-              backgroundColor: "rgba(249,115,22,0.08)",
-              border: "1px solid rgba(249,115,22,0.22)",
-              borderRadius: 16,
-              padding: "12px 16px",
-              marginBottom: 16,
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ display: "inline-flex", animation: "flame-pulse 1.5s ease-in-out infinite" }}>
-                <Flame size={18} color="#f97316" />
-              </span>
-              <span style={{ fontSize: 15, fontWeight: 700, color: "#f97316" }}>
-                {streak} 天连续练习
-              </span>
-            </div>
-            <span style={{ fontSize: 12, color: "rgba(249,115,22,0.80)" }}>
-              {streakBadge}
-            </span>
-          </motion.div>
-        )}
-
-        {/* ── 3. Main card ─────────────────────────────────────────────────── */}
-        {hasProgress ? (
-          <motion.div
-            variants={item}
-            {...mainCard.handlers}
-            style={{
-              backgroundColor: "#1a1a1a",
-              border: "1px solid rgba(255,255,255,0.08)",
-              borderLeft: "3px solid #10B981",
-              borderRadius: 20,
-              padding: 20,
-              ...hoverStyle(mainCard.hovered),
-            }}
-          >
-            <div style={{ fontSize: 11, color: "rgba(245,245,245,0.38)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 6 }}>
-              继续上次
-            </div>
-            <div style={{ fontSize: 24, fontWeight: 800, color: "#F5F5F5", marginBottom: 4 }}>
-              Book {currentBook} · Lesson {currentLesson}
-            </div>
-            {vocabPreview && (
-              <div style={{ fontSize: 13, color: "rgba(245,245,245,0.60)", marginBottom: 16 }}>
-                {vocabPreview}
-              </div>
-            )}
-
-            <div style={{ height: 4, backgroundColor: "rgba(255,255,255,0.08)", borderRadius: 999, marginBottom: 4, overflow: "hidden" }}>
-              <motion.div
-                style={{ height: "100%", backgroundColor: "#10B981", borderRadius: 999 }}
-                initial={{ width: "0%" }}
-                animate={{ width: `${progressPct}%` }}
-                transition={{ duration: 1.2, ease: "easeOut", delay: 0.3 }}
-              />
-            </div>
-
-            <div style={{ fontSize: 11, color: "rgba(245,245,245,0.38)", marginBottom: 20 }}>
-              已完成 {lessonsDone} 课
-            </div>
-
+        {/* D. Secondary cards */}
+        <motion.div variants={item} className="grid grid-cols-2 gap-3 mb-5">
+          <div className="border border-border rounded-xl p-4">
+            <div className="text-2xl font-bold text-primary mb-0.5">{reviewCount}</div>
+            <div className="text-xs text-muted-foreground mb-3">词到期</div>
             <Link
-              href={resumeHref}
-              className="cta-btn"
-              style={{
-                display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-                width: "100%", height: 56, backgroundColor: "#10B981", borderRadius: 14,
-                fontWeight: 700, fontSize: 16, color: "#fff", textDecoration: "none",
-                position: "relative", overflow: "hidden",
-              }}
+              href={reviewHref}
+              className="text-xs text-primary font-medium hover:underline"
             >
-              <Mic size={18} />
-              开口练习
-              <ArrowRight size={18} />
+              去复习→
             </Link>
-          </motion.div>
-        ) : (
-          <motion.div
-            variants={item}
-            {...mainCard.handlers}
-            style={{
-              backgroundColor: "rgba(16,185,129,0.04)",
-              border: "1px solid rgba(16,185,129,0.22)",
-              borderRadius: 20,
-              padding: 24,
-              ...hoverStyle(mainCard.hovered),
-            }}
-          >
-            <div style={{ fontSize: 34, fontWeight: 900, color: "#F5F5F5", lineHeight: 1.15, marginBottom: 12 }}>
-              开口，<br />就现在。
-            </div>
-            <div style={{ fontSize: 14, color: "rgba(245,245,245,0.60)", lineHeight: 1.65, marginBottom: 24 }}>
-              AI 问，你答，说错立刻纠正。不背单词，不学语法，张口就练。— 今天开始，7天后你会感谢自己
-            </div>
+          </div>
+          <div className="border border-border rounded-xl p-4">
+            <div className="text-2xl font-bold text-primary mb-0.5">{lessonsDone}</div>
+            <div className="text-xs text-muted-foreground mb-3">课已完成</div>
             <Link
-              href={onboardingHref}
-              className="cta-btn"
-              style={{
-                display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-                width: "100%", height: 56, backgroundColor: "#10B981", borderRadius: 14,
-                fontWeight: 700, fontSize: 16, color: "#fff", textDecoration: "none",
-                position: "relative", overflow: "hidden",
-              }}
+              href={`/${locale}/protected/stats`}
+              className="text-xs text-primary font-medium hover:underline"
             >
-              <Mic size={18} />
-              开始第一课 →
+              查看→
             </Link>
-          </motion.div>
-        )}
+          </div>
+        </motion.div>
 
-        {/* ── 4. Today tasks ───────────────────────────────────────────────── */}
-        {hasProgress && (
-          <motion.div variants={item}>
-            <div style={{ fontSize: 11, color: "rgba(245,245,245,0.38)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10, marginTop: 20 }}>
-              今日待办
-            </div>
-
-            <div
-              {...task1.handlers}
-              style={{
-                backgroundColor: "#1a1a1a",
-                border: "1px solid rgba(255,255,255,0.08)",
-                borderRadius: 14,
-                padding: "14px 16px",
-                marginBottom: 8,
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                ...hoverStyle(task1.hovered),
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <BookOpen size={18} color="#10B981" />
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: "#F5F5F5" }}>今日新课</div>
-                  <div style={{ fontSize: 12, color: "rgba(245,245,245,0.38)", marginTop: 1 }}>Lesson {currentLesson}</div>
-                </div>
-              </div>
-              <Link href={resumeHref} style={{ fontSize: 13, color: "#10B981", textDecoration: "none", fontWeight: 600 }}>
-                开始 →
-              </Link>
-            </div>
-
-            <div
-              {...task2.handlers}
-              style={{
-                backgroundColor: "#1a1a1a",
-                border: `1px solid ${reviewCount > 0 ? "rgba(239,68,68,0.28)" : "rgba(255,255,255,0.08)"}`,
-                borderRadius: 14,
-                padding: "14px 16px",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                ...hoverStyle(task2.hovered),
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <RotateCcw size={18} color={reviewCount > 0 ? "#ef4444" : "rgba(245,245,245,0.38)"} />
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: "#F5F5F5" }}>到期复习</div>
-                  {reviewCount > 0 ? (
-                    <>
-                      <div style={{ fontSize: 12, color: "#ef4444", marginTop: 1 }}>{reviewCount} 个词汇</div>
-                      <div style={{ fontSize: 11, color: "#ef4444", marginTop: 1 }}>⚡ 不复习，明天还在</div>
-                    </>
-                  ) : (
-                    <div style={{ fontSize: 12, color: "rgba(245,245,245,0.38)", marginTop: 1 }}>暂无</div>
-                  )}
-                </div>
-              </div>
-              {reviewCount > 0 ? (
-                <Link href={reviewHref} style={{ fontSize: 13, color: "#ef4444", textDecoration: "none", fontWeight: 600 }}>
-                  复习 →
-                </Link>
-              ) : (
-                <span style={{ fontSize: 13, color: "rgba(245,245,245,0.38)" }}>暂无</span>
-              )}
-            </div>
-          </motion.div>
-        )}
-
-        {/* ── 5. Stats row ─────────────────────────────────────────────────── */}
-        {(lessonsDone > 0 || streak > 0) && (
-          <motion.div variants={item}>
-            <div style={{ fontSize: 11, color: "rgba(245,245,245,0.38)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10, marginTop: 20 }}>
-              我的成就
-            </div>
-
-            <div style={{ display: "flex", gap: 8 }}>
-              {[
-                { icon: <Flame size={18} color="#10B981" />, value: streak, label: "连续天", hook: stat1, color: "#F5F5F5" },
-                { icon: <BookOpen size={18} color="#10B981" />, value: lessonsDone, label: "已学课时", hook: stat2, color: "#F5F5F5" },
-                { icon: <RotateCcw size={18} color="#10B981" />, value: reviewCount, label: "待复习", hook: stat3, color: reviewCount > 0 ? "#ef4444" : "#F5F5F5" },
-              ].map((stat, i) => (
-                <div
-                  key={i}
-                  {...stat.hook.handlers}
-                  style={{
-                    flex: 1,
-                    backgroundColor: "#1a1a1a",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    borderRadius: 14,
-                    padding: "14px 8px",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    gap: 4,
-                    ...hoverStyle(stat.hook.hovered),
-                  }}
-                >
-                  {stat.icon}
-                  <div style={{ fontSize: 22, fontWeight: 800, color: stat.color, lineHeight: 1 }}>
-                    <CountUp end={stat.value} duration={1.5} enableScrollSpy scrollSpyOnce />
-                  </div>
-                  <div style={{ fontSize: 11, color: "rgba(245,245,245,0.38)" }}>{stat.label}</div>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-        )}
+        {/* E. Map link */}
+        <motion.div variants={item}>
+          <Link
+            href={`/${locale}/protected/map`}
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            全部课程地图 →
+          </Link>
+        </motion.div>
       </motion.div>
     </>
   )

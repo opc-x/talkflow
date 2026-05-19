@@ -16,6 +16,30 @@ function formatDate() {
   return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日 · 周${days[d.getDay()]}`;
 }
 
+type Stage = {
+  index: number;
+  name: string;
+  emoji: string;
+  start: number;
+  end: number;
+};
+
+const STAGES: Stage[] = [
+  { index: 1, name: "入门",     emoji: "🌱", start: 1,   end: 24  },
+  { index: 2, name: "日常对话", emoji: "💬", start: 25,  end: 77  },
+  { index: 3, name: "职场流利", emoji: "💼", start: 78,  end: 126 },
+  { index: 4, name: "高级表达", emoji: "🎯", start: 127, end: 191 },
+];
+
+function getStageInfo(lessonNum: number): Stage {
+  return STAGES.find((s) => lessonNum >= s.start && lessonNum <= s.end) ?? STAGES[0];
+}
+
+function getStagePct(lessonsDoneArr: number[], stage: Stage): number {
+  const done = lessonsDoneArr.filter((l) => l >= stage.start && l <= stage.end).length;
+  return Math.round((done / (stage.end - stage.start + 1)) * 100);
+}
+
 export default async function DashboardPage() {
   const locale = await getLocale();
   const supabase = await createClient();
@@ -24,7 +48,6 @@ export default async function DashboardPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect(`/${locale}/auth/login`);
 
-  // user_progress
   const { data: progress } = await supabase
     .from("user_progress")
     .select("current_lesson_id, lessons_done")
@@ -47,7 +70,6 @@ export default async function DashboardPage() {
     currentLesson = data;
   }
 
-  // today's due reviews
   const today = new Date().toISOString();
   const { count: reviewCount } = await supabase
     .from("review_schedule")
@@ -55,34 +77,9 @@ export default async function DashboardPage() {
     .eq("user_id", user.id)
     .lte("next_review_at", today);
 
-  // streak + total lessons
-  const { data: sessions } = await supabase
-    .from("session_records")
-    .select("created_at")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false })
-    .limit(60);
-
-  let streak = 0;
-  if (sessions && sessions.length > 0) {
-    const dates = [
-      ...new Set(sessions.map((s) => s.created_at.slice(0, 10))),
-    ].sort((a, b) => b.localeCompare(a));
-    const todayStr = new Date().toISOString().slice(0, 10);
-    const yestStr = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
-    if (dates[0] === todayStr || dates[0] === yestStr) {
-      for (let i = 0; i < dates.length; i++) {
-        const exp = new Date(Date.now() - i * 86400000)
-          .toISOString()
-          .slice(0, 10);
-        if (dates[i] === exp) streak++;
-        else break;
-      }
-    }
-  }
-
   const lessonsDone = progress?.lessons_done?.length ?? 0;
   const hasProgress = !!currentLesson;
+
   const resumeHref = currentLesson
     ? `/${locale}/protected/learn/${currentLesson.book_num}/${currentLesson.lesson_num}`
     : `/${locale}/protected/learn/1/1`;
@@ -93,14 +90,18 @@ export default async function DashboardPage() {
 
   const displayName = user.email?.split("@")[0] ?? "同学";
 
+  const lessonNum = currentLesson?.lesson_num ?? 1;
+  const stage = getStageInfo(lessonNum);
+  const rawDone = progress?.lessons_done;
+  const lessonsDoneArr: number[] = Array.isArray(rawDone) ? (rawDone as number[]) : [];
+  const stagePct = getStagePct(lessonsDoneArr, stage);
+
   return (
     <DashboardContent
       displayName={displayName}
       hasProgress={hasProgress}
-      streak={streak}
       lessonsDone={lessonsDone}
       reviewCount={reviewCount ?? 0}
-      currentBook={currentLesson?.book_num}
       currentLesson={currentLesson?.lesson_num}
       vocabPreview={vocabPreview}
       resumeHref={resumeHref}
@@ -108,6 +109,11 @@ export default async function DashboardPage() {
       reviewHref={`/${locale}/protected/review`}
       greeting={getGreeting()}
       dateStr={formatDate()}
+      stageName={stage.name}
+      stageEmoji={stage.emoji}
+      stagePct={stagePct}
+      stageIndex={stage.index}
+      locale={locale}
     />
   );
 }

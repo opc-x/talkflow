@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, BookOpen, Mic, Volume2, CheckCircle2, XCircle, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import type { Segment } from "@/lib/learn";
-import { completeLesson } from "@/app/protected/learn/[bookNum]/[lessonNum]/actions";
+import { completeLesson } from "@/app/[locale]/protected/learn/[bookNum]/[lessonNum]/actions";
 
 type Phase = "vocab" | "question" | "answer";
 
