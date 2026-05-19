@@ -1,0 +1,15 @@
+{
+  "chatId": "dlYHAcFEoP5",
+  "title": "TalkFlow homepage component",
+  "webUrl": "https://v0.app/chat/dlYHAcFEoP5",
+  "apiUrl": "https://api.v0.dev/v1/chats/dlYHAcFEoP5",
+  "demoUrl": "https://demo-kzmjfhxrdul821l060rq.vusercontent.net?__v0_token=eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0..pHjer3ngJtpQGaf4.GeOsUBTBoGKOY6njuJ91ctnRrKzf8A4ItJwBvIzTpCugah9sXGfUc6078T0WoID45WqLwEBfjVcaey1YHqqiagQRIM4vnRAi0-KuW3nnjpQCY0tahd5WMBUPppHzo4jiuDt_VrQVgzRdYHqCuwTWxhmutrtoEbKx0Wyy0sRJMaBG2oCo8xkVs9svgoqvP2UjG92TyHBf9no4aY1Xtx8KYkAd_i_z_4xuqboN-udPb2GiTMzXs3E6-07lf2boyA89XlnslDOKgHINDA.S3MHHlm7UroSfKwDFw0Tfg",
+  "versionId": "b_Hzuf7xjaKMf",
+  "createdAt": "2026-05-19T11:08:52.325Z",
+  "updatedAt": "2026-05-19T11:11:00.091Z",
+  "files": [
+    "app/page.tsx",
+    "package.json",
+    "app/layout.tsx"
+  ]
+}
