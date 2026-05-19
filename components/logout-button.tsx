@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
 
-export function LogoutButton({ variant }: { variant?: "menu" | "button" }) {
+export function LogoutButton({ variant }: { variant?: "menu" | "button" | "text" }) {
   const router = useRouter();
 
   const logout = async () => {
@@ -22,6 +22,18 @@ export function LogoutButton({ variant }: { variant?: "menu" | "button" }) {
       >
         <LogOut className="w-4 h-4" />
         退出登录
+      </button>
+    );
+  }
+
+  if (variant === "text") {
+    return (
+      <button
+        onClick={logout}
+        className="flex items-center gap-3 w-full text-destructive"
+      >
+        <LogOut className="w-5 h-5" />
+        <span>退出登录</span>
       </button>
     );
   }
