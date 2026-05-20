@@ -20,6 +20,8 @@
 
 # production
 /build
+/backend/dist
+/shared/**/*.js
 
 # misc
 .DS_Store
