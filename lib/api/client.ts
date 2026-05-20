@@ -22,7 +22,11 @@ async function getAccessToken(): Promise<string | null> {
   return data.session?.access_token ?? null
 }
 
-export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
+export async function apiFetch<T>(
+  path: string,
+  init: RequestInit = {},
+  timeoutMs = 25_000
+): Promise<T> {
   const token = await getAccessToken()
   const headers = new Headers(init.headers)
 
@@ -34,20 +38,36 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
     headers.set("Content-Type", "application/json")
   }
 
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...init,
-    headers,
-  })
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
 
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}))
-    throw new ApiError(
-      typeof data.error === "string" ? data.error : `Request failed (${res.status})`,
-      res.status
-    )
+  try {
+    const res = await fetch(`${API_BASE}${path}`, {
+      ...init,
+      headers,
+      signal: controller.signal,
+    })
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      throw new ApiError(
+        typeof data.error === "string" ? data.error : `Request failed (${res.status})`,
+        res.status
+      )
+    }
+
+    return res.json() as Promise<T>
+  } catch (err) {
+    if (err instanceof Error && err.name === "AbortError") {
+      throw new ApiError(
+        `口语服务超时（${timeoutMs / 1000}s）。请确认已运行 npm run dev:api`,
+        408
+      )
+    }
+    throw err
+  } finally {
+    clearTimeout(timer)
   }
-
-  return res.json() as Promise<T>
 }
 
 export { API_BASE }

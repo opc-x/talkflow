@@ -4,6 +4,7 @@ import { groupIntoSegments } from "@/lib/learn";
 import { SessionCard } from "@/components/learn/session-card";
 import { getStageForLesson } from "@/lib/stages";
 import type { VocabTerm } from "@/components/learn/vocab-list";
+import { normalizeDisplayText } from "@/lib/normalize-display-text";
 
 interface Props {
   params: Promise<{ bookNum: string; lessonNum: string }>;
@@ -68,18 +69,19 @@ export default async function LessonPage({ params }: Props) {
 
   const { data: termsRows } = await supabase
     .from("terms")
-    .select("term, metadata")
+    .select("term, normalized, metadata")
     .eq("book_num", bookNum)
     .eq("lesson_num", lessonNum)
     .limit(40);
 
-  type TermRow = { term: string; metadata: unknown };
+  type TermRow = { term: string; normalized: string; metadata: unknown };
   const vocabTerms: VocabTerm[] = ((termsRows as TermRow[] | null) ?? []).map((row) => {
     const meta = row.metadata as { ipa?: string; zh_cn?: string } | null;
+    const rawTerm = (row.normalized || row.term) as string;
     return {
-      term: row.term as string,
-      ipa: meta?.ipa ?? null,
-      zh_cn: meta?.zh_cn ?? null,
+      term: normalizeDisplayText(rawTerm),
+      ipa: meta?.ipa ? normalizeDisplayText(meta.ipa) : null,
+      zh_cn: meta?.zh_cn ? normalizeDisplayText(meta.zh_cn) : null,
     };
   });
 

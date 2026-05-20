@@ -13,7 +13,7 @@ export async function evaluateAssessmentRound(formData: FormData) {
   return apiFetch<RoundEvaluation>("/assessment/evaluate", {
     method: "POST",
     body: formData,
-  })
+  }, 20_000)
 }
 
 export async function completeAssessment(rounds: RoundEvaluation[]) {

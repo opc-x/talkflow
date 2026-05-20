@@ -50,6 +50,17 @@ export default async function DashboardPage() {
     currentLesson = data;
   }
 
+  // 有进度记录但课表未 seed：仍显示老用户首页（用默认课次）
+  const hasProgress = !!progress?.current_lesson_id;
+  if (hasProgress && !currentLesson) {
+    currentLesson = {
+      id: progress.current_lesson_id,
+      book_num: 1,
+      lesson_num: 8,
+      vocab: null,
+    };
+  }
+
   let sceneImageUrl: string | null = null;
   if (currentLesson?.id) {
     const { data: scene } = await supabase
@@ -69,7 +80,6 @@ export default async function DashboardPage() {
     .eq("user_id", user.id)
     .lte("next_review_at", today);
 
-  const hasProgress = !!currentLesson;
   const resumeHref = currentLesson
     ? `/${locale}/protected/learn/${currentLesson.book_num}/${currentLesson.lesson_num}`
     : `/${locale}/protected/learn/1/1`;

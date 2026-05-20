@@ -1,8 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { createAdminClient, DEV_USER_ID } from "@/lib/supabase/admin";
 
 const DEV_USER = {
-  id: "00000000-0000-0000-0000-000000000001",
+  id: DEV_USER_ID,
   email: "dev@talkflow.local",
   user_metadata: {} as Record<string, unknown>,
   app_metadata: {} as Record<string, unknown>,
@@ -36,19 +37,21 @@ export async function createClient() {
 
   if (process.env.DEV_BYPASS_AUTH !== "true") return realClient;
 
-  // Dev bypass mode: return a hybrid client where auth.getUser() returns a
-  // fake user but all DB calls (.from()) still hit the real Supabase.
+  const admin = createAdminClient();
+  const db = admin ?? realClient;
+
+  // Dev bypass: fake user + service role DB（否则 anon 读不到 user_progress）
   return {
     auth: {
       getUser: async () => ({ data: { user: DEV_USER }, error: null }),
       getSession: async () => ({ data: { session: null }, error: null }),
       signOut: realClient.auth.signOut.bind(realClient.auth),
     },
-    from: realClient.from.bind(realClient),
-    rpc: realClient.rpc.bind(realClient),
-    storage: realClient.storage,
-    functions: realClient.functions,
-    channel: realClient.channel.bind(realClient),
+    from: db.from.bind(db),
+    rpc: db.rpc.bind(db),
+    storage: db.storage,
+    functions: db.functions,
+    channel: db.channel.bind(db),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any;
 }

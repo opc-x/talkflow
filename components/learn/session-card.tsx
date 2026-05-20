@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useTransition, useMemo } from "react";
+import dynamic from "next/dynamic";
+import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   ChevronLeft,
@@ -13,9 +15,21 @@ import {
 import Link from "next/link";
 import type { Segment } from "@/lib/learn";
 import { completeLesson } from "@/app/[locale]/protected/learn/[bookNum]/[lessonNum]/actions";
-import { VocabList, type VocabTerm } from "@/components/learn/vocab-list";
+import type { VocabTerm } from "@/components/learn/vocab-list";
 import { speakEnglish } from "@/lib/speech";
 import { MarketScene } from "@/components/scenes/market-scene";
+
+const VocabList = dynamic(
+  () => import("@/components/learn/vocab-list").then((mod) => mod.VocabList),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="px-3 py-6 text-center text-sm text-muted-foreground">
+        加载词汇…
+      </div>
+    ),
+  },
+);
 
 type Phase = "vocab" | "question" | "answer";
 
@@ -47,6 +61,11 @@ export function SessionCard({
   vocabTerms,
   totalSentences,
 }: Props) {
+  const router = useRouter();
+  const params = useParams();
+  const locale = (params.locale as string) ?? "zh";
+  const homeHref = `/${locale}/protected`;
+
   const [segIdx, setSegIdx] = useState(0);
   const [phase, setPhase] = useState<Phase>("vocab");
   const [pairIdx, setPairIdx] = useState(0);
@@ -130,23 +149,37 @@ export function SessionCard({
     }
   }
 
+  function exitToHome() {
+    window.location.href = homeHref;
+  }
+
   function goBack() {
+    if (phase === "vocab" && segIdx === 0) {
+      exitToHome();
+      return;
+    }
     if (phase === "answer") {
       setPhase(isGrammarNote ? "vocab" : "question");
-    } else if (phase === "question") {
+      return;
+    }
+    if (phase === "question") {
       if (pairIdx > 0) {
         setPairIdx((p) => p - 1);
         setPhase("answer");
       } else {
         setPhase("vocab");
       }
-    } else if (segIdx > 0) {
+      return;
+    }
+    if (segIdx > 0) {
       const prev = segments[segIdx - 1];
       setSegIdx((s) => s - 1);
       const lastPair = Math.max(prev.pairs.length - 1, 0);
       setPairIdx(lastPair);
       setPhase(prev.pairs.length > 0 ? "answer" : "vocab");
+      return;
     }
+    router.push(homeHref);
   }
 
   const progressPct =
@@ -159,13 +192,26 @@ export function SessionCard({
       <header className="sticky top-14 z-10 bg-background/80 backdrop-blur-sm border-b border-border">
         <div className="max-w-2xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between mb-3">
-            <button
-              type="button"
-              onClick={goBack}
-              className="flex items-center gap-1 text-muted-foreground hover:text-foreground"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
+            {phase === "vocab" && segIdx === 0 ? (
+              <a
+                href={homeHref}
+                className="flex min-w-[4rem] items-center gap-0.5 text-muted-foreground hover:text-foreground"
+                aria-label="返回首页"
+              >
+                <ChevronLeft className="w-5 h-5" />
+                <span className="text-sm">返回</span>
+              </a>
+            ) : (
+              <button
+                type="button"
+                onClick={goBack}
+                className="flex min-w-[4rem] items-center gap-0.5 text-muted-foreground hover:text-foreground"
+                aria-label="上一步"
+              >
+                <ChevronLeft className="w-5 h-5" />
+                <span className="text-sm">返回</span>
+              </button>
+            )}
             <span className="text-sm font-medium text-foreground">
               {stageLabel} · 第{lessonNum}课
             </span>
@@ -182,37 +228,52 @@ export function SessionCard({
         </div>
       </header>
 
-      <main className="flex-1 flex flex-col max-w-2xl mx-auto w-full px-4 py-6">
+      <main className="flex-1 flex flex-col max-w-2xl mx-auto w-full px-4 py-4 pb-6">
         {phase === "vocab" && (
           <>
-            {(sceneImageUrl || segIdx === 0) && (
-              <div className="mb-5 h-44 w-full overflow-hidden rounded-2xl border border-border bg-muted">
-                {sceneImageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={sceneImageUrl} alt="" className="h-full w-full object-cover" />
-                ) : (
+            <div className="relative mb-4 aspect-[4/3] w-full shrink-0 overflow-hidden rounded-2xl border border-border bg-muted">
+              {sceneImageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={sceneImageUrl} alt="" className="h-full w-full object-cover" />
+              ) : (
+                <div className="h-full w-full [&_svg]:h-full [&_svg]:w-full">
                   <MarketScene />
-                )}
+                </div>
+              )}
+              <span className="absolute left-3 top-3 rounded-full bg-primary/90 px-2.5 py-1 text-[10px] font-semibold text-white">
+                看图说话
+              </span>
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-4 pb-3 pt-10">
+                <p className="text-sm font-medium text-white">本课场景</p>
+                <p className="text-xs text-white/70">
+                  {vocabTerms.length > 0
+                    ? `${vocabTerms.length} 个新词 · 先看图再开口`
+                    : segment.vocab.split(" | ").slice(0, 4).join(" · ")}
+                </p>
               </div>
-            )}
-            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-3">
-              本课新词
-            </p>
+            </div>
+
             {vocabTerms.length > 0 ? (
-              <VocabList terms={vocabTerms} />
+              <div className="mb-4 max-h-[32vh] overflow-y-auto rounded-xl border border-border bg-card/50 px-1">
+                <p className="sticky top-0 z-10 bg-card/95 px-3 py-2 text-xs font-medium uppercase tracking-wider text-muted-foreground backdrop-blur-sm">
+                  本课新词（点词可听）
+                </p>
+                <VocabList terms={vocabTerms} />
+              </div>
             ) : (
-              <p className="text-lg font-medium text-foreground leading-relaxed">
+              <p className="mb-4 text-lg font-medium text-foreground leading-relaxed">
                 {segment.vocab.split(" | ").join(" · ")}
               </p>
             )}
-            <div className="flex-1" />
-            <Button
-              size="lg"
-              className="mt-8 w-full rounded-2xl h-14"
-              onClick={startSegment}
-            >
-              开始问答 →
-            </Button>
+            <div className="mt-auto pt-2">
+              <Button
+                size="lg"
+                className="w-full rounded-2xl h-14"
+                onClick={startSegment}
+              >
+                开始问答 →
+              </Button>
+            </div>
           </>
         )}
 
@@ -300,7 +361,7 @@ export function SessionCard({
 
         <div className="mt-6 text-center">
           <Link
-            href="/protected"
+            href={homeHref}
             className="text-sm text-muted-foreground hover:text-foreground"
           >
             返回首页

@@ -6,6 +6,7 @@ import { Mic, CheckCircle2, Eye, EyeOff, Loader2, AlertCircle } from "lucide-rea
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { DevAuthTools } from "@/components/dev-auth-tools"
 
 // ─── Brand panel (shared visual) ────────────────────────────────────────────
 
@@ -307,6 +308,8 @@ export function SignUpForm({ locale = "zh", onSubmit }: SignUpFormProps) {
               )}
             </Button>
           </form>
+
+          <DevAuthTools locale={locale} email={email} password={password} />
 
           {/* Footer links */}
           <div className="mt-6 flex flex-col items-center gap-3">

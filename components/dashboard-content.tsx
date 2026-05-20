@@ -1,23 +1,9 @@
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
-import { motion } from "framer-motion"
 import { CheckCircle2, Mic } from "lucide-react"
 import { MarketScene } from "@/components/scenes/market-scene"
-
-const container = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.08 } },
-}
-
-const item = {
-  hidden: { opacity: 0, y: 20 },
-  show: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] },
-  },
-}
 
 const DISPLAY_STAGES = [
   { index: 1, name: "入门", emoji: "🌱" },
@@ -26,7 +12,7 @@ const DISPLAY_STAGES = [
   { index: 4, name: "高级表达", emoji: "🎯" },
 ]
 
-interface DashboardContentProps {
+export interface DashboardContentProps {
   displayName: string
   hasProgress: boolean
   reviewCount: number
@@ -46,27 +32,24 @@ interface DashboardContentProps {
 }
 
 function SceneHero({ imageUrl }: { imageUrl?: string | null }) {
-  if (imageUrl) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={imageUrl}
-        alt=""
-        className="h-full w-full object-cover"
-        onError={(e) => {
-          e.currentTarget.style.display = "none"
-        }}
-      />
-    )
-  }
-  return <MarketScene />
-}
+  const [imgFailed, setImgFailed] = useState(false)
+  const showImg = Boolean(imageUrl) && !imgFailed
 
-function EmptyStateScene() {
   return (
-    <div className="flex h-48 w-full items-center justify-center rounded-2xl bg-gradient-to-br from-[#0d2e20] to-[#111111]">
-      <Mic className="h-12 w-12 text-[#10B981] opacity-40" />
-    </div>
+    <>
+      <div className="absolute inset-0 [&_svg]:h-full [&_svg]:w-full">
+        <MarketScene />
+      </div>
+      {showImg && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={imageUrl!}
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover"
+          onError={() => setImgFailed(true)}
+        />
+      )}
+    </>
   )
 }
 
@@ -89,13 +72,8 @@ export function DashboardContent({
   stageIndex,
 }: DashboardContentProps) {
   return (
-    <motion.main
-      variants={container}
-      initial="hidden"
-      animate="show"
-      className="mx-auto min-h-full w-full max-w-[430px] px-4 pb-28 pt-4"
-    >
-      <motion.section variants={item} className="mb-5">
+    <main className="mx-auto min-h-full w-full max-w-[430px] px-4 pb-28 pt-4">
+      <section className="mb-5">
         <p className="mb-1 text-xs text-muted-foreground">{dateStr}</p>
         <h1 className="text-xl font-semibold text-foreground">
           {greeting}，{displayName}
@@ -104,53 +82,60 @@ export function DashboardContent({
           {stageEmoji} {stageName}
           {currentLesson ? ` · 第${currentLesson}课` : ""}
         </p>
-      </motion.section>
+      </section>
 
-      <motion.section variants={item} className="mb-6">
+      <section className="mb-6">
         {hasProgress ? (
           <Link href={resumeHref} className="block group">
-            <article className="overflow-hidden rounded-3xl bg-[#10B981] shadow-[0_18px_60px_rgba(16,185,129,0.35)] transition-transform group-hover:scale-[1.01] group-active:scale-[0.99]">
-              {sceneImageUrl && (
-                <div className="relative h-36 w-full overflow-hidden">
-                  <SceneHero imageUrl={sceneImageUrl} />
-                  <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[#10B981]" />
+            <article className="relative aspect-[4/5] max-h-[400px] min-h-[280px] w-full overflow-hidden rounded-3xl border border-white/10 shadow-[0_18px_60px_rgba(0,0,0,0.35)] transition-transform group-hover:scale-[1.01] group-active:scale-[0.99]">
+              <div className="absolute inset-0 bg-[#0d2e20]">
+                <SceneHero imageUrl={sceneImageUrl} />
+              </div>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/25 to-black/5" />
+              <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-primary/90 px-2.5 py-1 text-[10px] font-semibold text-white">
+                看图说话
+              </span>
+              <div className="absolute inset-x-0 bottom-0 p-5 pt-16">
+                {currentLesson && (
+                  <p className="text-xs font-medium text-white/70">
+                    第 {currentLesson} 课 · 约 15 分钟
+                  </p>
+                )}
+                <p className="mt-1 text-2xl font-bold text-white">开口练习</p>
+                {vocabPreview && (
+                  <p className="mt-2 line-clamp-2 text-sm text-white/75">{vocabPreview}</p>
+                )}
+                <div className="mt-4 flex h-12 items-center justify-center gap-2 rounded-xl bg-[#10B981] font-semibold text-white shadow-[0_8px_24px_rgba(16,185,129,0.45)]">
+                  <Mic className="h-5 w-5" />
+                  进入场景 →
                 </div>
-              )}
-              <div className={`px-5 pb-6 pt-5 text-center ${sceneImageUrl ? "" : "pt-8 min-h-[220px] flex flex-col justify-center"}`}>
-                <Mic className="mx-auto mb-3 h-10 w-10 text-white" />
-                <p className="text-2xl font-bold text-white">开口练习</p>
-                <p className="mt-1 text-sm text-white/80">约 15 分钟</p>
-                <p className="mt-3 text-sm text-white/70">
-                  {vocabPreview ?? "know · travel · station · platform"}
-                </p>
               </div>
             </article>
           </Link>
         ) : (
-          <article className="rounded-3xl border border-white/10 bg-[#1a1a1a] p-6 text-center shadow-[0_18px_60px_rgba(0,0,0,0.22)]">
-            <EmptyStateScene />
-            <h2 className="mt-6 text-xl font-bold text-white">开始你的英语旅程</h2>
-            <p className="text-sm text-muted-foreground mb-8 max-w-xs mx-auto">
-              先试两句，找到你的练嘴起点
-            </p>
-            <motion.div
-              className="mt-6"
-              animate={{ scale: [1, 1.025, 1] }}
-              transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
-            >
-              <Link
-                href={onboardingHref}
-                className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[#10B981] text-lg font-semibold text-white shadow-[0_16px_36px_rgba(16,185,129,0.28)]"
-              >
-                <Mic className="h-5 w-5" />
-                开始体验 →
-              </Link>
-            </motion.div>
-          </article>
+          <Link href={onboardingHref} className="block group">
+            <article className="relative aspect-[4/5] max-h-[400px] min-h-[280px] w-full overflow-hidden rounded-3xl border border-white/10 shadow-[0_18px_60px_rgba(0,0,0,0.22)] transition-transform group-hover:scale-[1.01]">
+              <div className="absolute inset-0 bg-[#0d2e20]">
+                <SceneHero imageUrl={null} />
+              </div>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
+              <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-primary/90 px-2.5 py-1 text-[10px] font-semibold text-white">
+                看图说话
+              </span>
+              <div className="absolute inset-x-0 bottom-0 p-5 pt-12 text-center">
+                <h2 className="text-xl font-bold text-white">开始你的英语旅程</h2>
+                <p className="mt-2 text-sm text-white/75">先试两句，找到练嘴起点</p>
+                <div className="mt-5 flex h-14 items-center justify-center gap-2 rounded-2xl bg-[#10B981] text-lg font-semibold text-white shadow-[0_16px_36px_rgba(16,185,129,0.35)]">
+                  <Mic className="h-5 w-5" />
+                  开始体验 →
+                </div>
+              </div>
+            </article>
+          </Link>
         )}
-      </motion.section>
+      </section>
 
-      <motion.section variants={item} className="mb-5">
+      <section className="mb-5">
         <h2 className="mb-3 text-sm font-medium text-foreground">我的进度</h2>
         <div className="flex items-center gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {DISPLAY_STAGES.map((stage, index) => {
@@ -174,12 +159,10 @@ export function DashboardContent({
                     <p className="whitespace-nowrap text-sm font-semibold text-[#10B981]">
                       {stage.emoji} {stage.name}
                     </p>
-                    <div className="mt-2 h-1 overflow-hidden rounded-full bg-white/10">
-                      <motion.div
-                        className="h-full rounded-full bg-[#10B981]"
-                        initial={{ width: "0%" }}
-                        animate={{ width: `${stagePct}%` }}
-                        transition={{ duration: 0.8, ease: "easeOut" }}
+                    <div className="mt-2 h-1 overflow-hidden rounded-full bg-muted">
+                      <div
+                        className="h-full rounded-full bg-[#10B981] transition-all duration-500"
+                        style={{ width: `${stagePct}%` }}
                       />
                     </div>
                     <p className="mt-1 text-xs text-[#10B981]">{stagePct}%</p>
@@ -195,9 +178,9 @@ export function DashboardContent({
             )
           })}
         </div>
-      </motion.section>
+      </section>
 
-      <motion.section variants={item} className="mb-4">
+      <section className="mb-4">
         <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-sm">
           <Link href={reviewHref} className="inline-flex items-center gap-1.5 text-foreground hover:text-primary transition-colors">
             今日复习
@@ -216,7 +199,7 @@ export function DashboardContent({
             课程地图 →
           </Link>
         </div>
-      </motion.section>
-    </motion.main>
+      </section>
+    </main>
   )
 }
