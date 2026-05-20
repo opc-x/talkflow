@@ -166,7 +166,7 @@ export function SignUpForm({ locale = "zh", onSubmit }: SignUpFormProps) {
           {/* Header */}
           <div className="mb-7">
             <h2 className="font-bold text-2xl mb-1.5" style={{ color: "#F5F5F5" }}>
-              创建账户
+              开始你的英语旅程
             </h2>
             <p className="text-sm" style={{ color: "rgba(245,245,245,0.5)" }}>
               注册后直接开始练习，不需要信用卡
@@ -303,7 +303,7 @@ export function SignUpForm({ locale = "zh", onSubmit }: SignUpFormProps) {
                   注册中…
                 </span>
               ) : (
-                "免费注册 →"
+                "创建账户"
               )}
             </Button>
           </form>

@@ -66,12 +66,20 @@ const PREVIEW_SEGMENTS: Segment[] = [
 ];
 
 export default function LearnPreviewPage() {
+  const totalSentences = PREVIEW_SEGMENTS.reduce(
+    (n, seg) => n + seg.pairs.filter((p) => p.question !== "").length,
+    0
+  );
+
   return (
     <SessionCard
       segments={PREVIEW_SEGMENTS}
       bookNum={1}
       lessonNum={1}
       lessonId={null}
+      stageLabel="🌱 入门"
+      vocabTerms={[]}
+      totalSentences={Math.max(totalSentences, 1)}
     />
   );
 }

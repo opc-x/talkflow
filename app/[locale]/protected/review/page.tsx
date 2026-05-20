@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ReviewClient } from "./review-client";
+import { getStageForLesson } from "@/lib/stages";
 
 export default async function ReviewPage() {
   const supabase = await createClient();
@@ -36,6 +37,8 @@ export default async function ReviewPage() {
     interval_days: number;
     ease_factor: number;
     rep_count: number;
+    stageLabel: string;
+    daysSince: number;
   }
 
   interface QaRow {
@@ -58,6 +61,7 @@ export default async function ReviewPage() {
     const aIdx = body.indexOf(" A: ");
     if (aIdx === -1) continue;
 
+    const stage = getStageForLesson(qa.lesson_num);
     items.push({
       id: row.id as number,
       question: body.slice(0, aIdx).trim(),
@@ -67,6 +71,8 @@ export default async function ReviewPage() {
       interval_days: row.interval_days as number,
       ease_factor: row.ease_factor as number,
       rep_count: row.rep_count as number,
+      stageLabel: `${stage.emoji} ${stage.name}`,
+      daysSince: row.interval_days as number,
     });
   }
 

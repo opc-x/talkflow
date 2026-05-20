@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Mic, Flame, Settings, Home, RotateCcw, User } from "lucide-react";
+import { Mic, Flame, Settings, User, Unlock } from "lucide-react";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { createClient } from "@/lib/supabase/server";
 import { getLocale } from "next-intl/server";
@@ -11,6 +11,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { LogoutButton } from "@/components/logout-button";
+import { ProtectedBottomNav } from "@/components/protected-bottom-nav";
+import { getUserPlan } from "@/lib/user-stats";
 
 async function getStreak(userId: string) {
   const supabase = await createClient();
@@ -87,7 +89,18 @@ export default async function ProtectedLayout({
   const streak = user ? await getStreak(user.id) : 0;
   const reviewCount = user ? await getReviewCount(user.id) : 0;
   const currentLesson = user ? await getCurrentLesson(user.id) : null;
-  const initials = (user?.email ?? "?")[0].toUpperCase();
+
+  let displayInitial = "?";
+  let userPlan: "free" | "basic" | "pro" = "free";
+  if (user) {
+    const [{ data: profile }, plan] = await Promise.all([
+      supabase.from("profiles").select("nickname").eq("id", user.id).maybeSingle(),
+      getUserPlan(supabase, user.id),
+    ]);
+    userPlan = plan;
+    const name = profile?.nickname?.trim() || user.email?.split("@")[0] || "?";
+    displayInitial = name[0]?.toUpperCase() ?? "?";
+  }
 
   const micHref = currentLesson
     ? `/${locale}/protected/learn/${currentLesson.book_num}/${currentLesson.lesson_num}`
@@ -106,6 +119,15 @@ export default async function ProtectedLayout({
           </Link>
 
           <div className="flex items-center gap-2">
+            {userPlan === "free" && (
+              <Link
+                href={`/${locale}/protected/me?upgrade=1`}
+                className="hidden sm:inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary hover:bg-primary/15"
+              >
+                <Unlock className="w-3.5 h-3.5" />
+                升级 Pro
+              </Link>
+            )}
             {streak > 0 && (
               <span className="flex items-center gap-1 bg-orange-100 dark:bg-orange-950 text-orange-600 dark:text-orange-400 rounded-full px-2.5 py-1 text-xs font-medium">
                 <Flame className="w-3.5 h-3.5" />
@@ -116,7 +138,7 @@ export default async function ProtectedLayout({
             {user && (
               <DropdownMenu>
                 <DropdownMenuTrigger className="w-8 h-8 rounded-full bg-primary text-primary-foreground text-sm font-bold flex items-center justify-center hover:opacity-90 transition-opacity outline-none">
-                  {initials}
+                  {displayInitial}
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-40">
                   <DropdownMenuItem asChild>
@@ -144,50 +166,11 @@ export default async function ProtectedLayout({
 
       <div className="flex-1 flex flex-col pb-20 md:pb-0">{children}</div>
 
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background">
-        <div className="relative mx-auto flex h-16 max-w-[430px] items-center justify-around px-4">
-          <Link
-            href={`/${locale}/protected`}
-            className="flex flex-1 flex-col items-center justify-center gap-1 py-2 text-primary transition-colors"
-          >
-            <Home className="h-5 w-5" />
-            <span className="text-xs">首页</span>
-          </Link>
-
-          <div className="flex-1" />
-
-          <Link
-            href={micHref}
-            aria-label="开口练习"
-            className="absolute left-1/2 top-0 flex h-14 w-14 -translate-x-1/2 -translate-y-5 animate-breathe items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[0_0_0_4px_hsl(var(--background)),0_0_24px_rgba(16,185,129,0.6)] transition-colors hover:bg-primary/90"
-          >
-            <Mic className="h-6 w-6" />
-          </Link>
-
-          <Link
-            href={`/${locale}/protected/review`}
-            className="relative flex flex-1 flex-col items-center justify-center gap-1 py-2 text-muted-foreground transition-colors hover:text-foreground"
-          >
-            <div className="relative">
-              <RotateCcw className="h-5 w-5" />
-              {reviewCount > 0 && (
-                <span className="absolute -right-2 -top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
-                  {reviewCount > 99 ? "99+" : reviewCount}
-                </span>
-              )}
-            </div>
-            <span className="text-xs">复习</span>
-          </Link>
-
-          <Link
-            href={`/${locale}/protected/me`}
-            className="flex flex-1 flex-col items-center justify-center gap-1 py-2 text-muted-foreground transition-colors hover:text-foreground"
-          >
-            <User className="h-5 w-5" />
-            <span className="text-xs">我的</span>
-          </Link>
-        </div>
-      </div>
+      <ProtectedBottomNav
+        locale={locale}
+        micHref={micHref}
+        reviewCount={reviewCount}
+      />
     </div>
   );
 }

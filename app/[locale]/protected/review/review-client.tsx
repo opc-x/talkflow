@@ -17,6 +17,8 @@ interface ReviewItem {
   interval_days: number;
   ease_factor: number;
   rep_count: number;
+  stageLabel: string;
+  daysSince: number;
 }
 
 const RATINGS = [
@@ -64,7 +66,7 @@ export function ReviewClient({ items }: { items: ReviewItem[] }) {
   }
 
   const item = items[idx];
-  const pct = Math.round((idx / total) * 100);
+  const doneCount = idx;
 
   function rate(score: number) {
     startTransition(async () => {
@@ -86,22 +88,22 @@ export function ReviewClient({ items }: { items: ReviewItem[] }) {
       </div>
 
       <div className="flex justify-between text-sm text-muted-foreground mb-2">
-        <span>
-          {idx} / {total} 完成
+        <span>今日复习</span>
+        <span className="font-medium text-foreground tabular-nums">
+          {doneCount} / {total}
         </span>
-        <span>{pct}%</span>
       </div>
       <div className="w-full h-2 bg-muted rounded-full overflow-hidden mb-6">
         <div
           className="h-full bg-primary rounded-full transition-all duration-500"
-          style={{ width: `${pct}%` }}
+          style={{ width: `${total > 0 ? (doneCount / total) * 100 : 0}%` }}
         />
       </div>
 
       {/* Card */}
       <Card className="rounded-2xl border p-8">
         <p className="text-xs text-muted-foreground mb-4 text-center">
-          Book {item.book_num} · Lesson {item.lesson_num} · 词汇复习
+          {item.stageLabel} · 第{item.lesson_num}课 · 上次 {item.daysSince} 天前
         </p>
 
         {!revealed ? (
@@ -115,7 +117,7 @@ export function ReviewClient({ items }: { items: ReviewItem[] }) {
               className="w-full rounded-xl"
               onClick={() => setRevealed(true)}
             >
-              想想看，再看答案
+              点击显示答案
             </Button>
           </>
         ) : (
