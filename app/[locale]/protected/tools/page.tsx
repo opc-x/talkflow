@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Search, BookOpen, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { searchContent } from "@/lib/api/search";
 
 type Tab = "vocab" | "grammar" | "content";
 
@@ -249,12 +250,20 @@ function ContentSearch() {
   function search() {
     if (!query.trim()) return;
     startTransition(async () => {
-      const res = await fetch(
-        `/api/search?q=${encodeURIComponent(query.trim())}&limit=10`
-      );
-      if (res.ok) {
-        const data = await res.json();
-        setResults(data.results ?? []);
+      try {
+        const data = await searchContent({ query: query.trim(), limit: 10 });
+        setResults(
+          (data.results ?? []).map((r) => ({
+            id: r.block_id,
+            text: r.text,
+            block_type: r.block_type,
+            book_num: r.book_num,
+            lesson_num: r.lesson_num,
+            book_page: r.book_page,
+          }))
+        );
+      } catch {
+        setResults([]);
       }
       setSearched(true);
     });

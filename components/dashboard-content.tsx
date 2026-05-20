@@ -130,8 +130,8 @@ export function DashboardContent({
           <article className="rounded-3xl border border-white/10 bg-[#1a1a1a] p-6 text-center shadow-[0_18px_60px_rgba(0,0,0,0.22)]">
             <EmptyStateScene />
             <h2 className="mt-6 text-xl font-bold text-white">开始你的英语旅程</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              3 分钟口语测评，AI 找到你的起点
+            <p className="text-sm text-muted-foreground mb-8 max-w-xs mx-auto">
+              先试两句，找到你的练嘴起点
             </p>
             <motion.div
               className="mt-6"
@@ -143,7 +143,7 @@ export function DashboardContent({
                 className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[#10B981] text-lg font-semibold text-white shadow-[0_16px_36px_rgba(16,185,129,0.28)]"
               >
                 <Mic className="h-5 w-5" />
-                开始测评 →
+                开始体验 →
               </Link>
             </motion.div>
           </article>

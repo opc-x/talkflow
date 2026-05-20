@@ -1,41 +1,52 @@
 "use client"
 
-import { useState, useEffect, useTransition } from "react"
+import { useState, useEffect, useTransition, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
-import { Mic, Loader2, Zap } from "lucide-react"
+import { Mic, Loader2, Zap, AlertCircle, ImageIcon, MessageCircle, RotateCcw } from "lucide-react"
 import { speakEnglish } from "@/lib/speech"
+import { recordAudio, AudioRecorderError } from "@/lib/audio-recorder"
+import { roundAverageScore } from "@shared/assessment/placement"
+import type { AssessmentQuestion, AssessmentResult, RoundEvaluation } from "@shared/types/assessment"
+import {
+  getAssessmentQuestions,
+  evaluateAssessmentRound,
+  completeAssessment,
+} from "@/lib/api/assessment"
 
-const ROUNDS = [
+const RULES = [
   {
-    scene: "office",
-    question: "What do you do for work?",
-    userSaid: "I am... engineer",
-    suggestion: "I'm a software engineer.",
+    title: "看到场景就开口",
+    desc: "别在脑子里翻译成中文，直接用英语反应",
   },
   {
-    scene: "cafe",
-    question: "What would you like to drink?",
-    userSaid: "I want coffee... no sugar",
-    suggestion: "I'd like a coffee with no sugar, please.",
+    title: "说错了会当场纠正",
+    desc: "AI 不会嘲笑你，但会逼你说到更自然为止",
   },
   {
-    scene: "airport",
-    question: "Where are you flying to?",
-    userSaid: "I go to London",
-    suggestion: "I'm flying to London.",
+    title: "练的是嘴，不是眼",
+    desc: "不用背词表，反复说到脱口而出",
   },
 ] as const
 
-const START_LESSON = { book: 3, lesson: 28 }
+const PASS_SCORE = 5
 
 export default function OnboardingPage() {
   const [screen, setScreen] = useState(0)
   const [round, setRound] = useState(0)
+  const [questions, setQuestions] = useState<AssessmentQuestion[]>([])
+  const [evaluations, setEvaluations] = useState<RoundEvaluation[]>([])
+  const [currentEval, setCurrentEval] = useState<RoundEvaluation | null>(null)
+  const [result, setResult] = useState<AssessmentResult | null>(null)
   const [recording, setRecording] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
   const [visible, setVisible] = useState(true)
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
+
+  const currentQuestion = questions[round] ?? null
+  const totalRounds = questions.length
 
   useEffect(() => {
     setVisible(false)
@@ -44,56 +55,93 @@ export default function OnboardingPage() {
   }, [screen, round])
 
   useEffect(() => {
-    if (screen !== 4) return
-    const t = setTimeout(() => setScreen(5), 2200)
-    return () => clearTimeout(t)
-  }, [screen])
-
-  function finish() {
-    startTransition(async () => {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        router.push("/auth/login")
-        return
+    let cancelled = false
+    async function loadQuestions() {
+      setLoading(true)
+      setLoadError(null)
+      try {
+        const data = await getAssessmentQuestions()
+        if (!cancelled) setQuestions(data.questions ?? [])
+      } catch (err) {
+        if (!cancelled) {
+          setLoadError(err instanceof Error ? err.message : "加载失败")
+        }
+      } finally {
+        if (!cancelled) setLoading(false)
       }
-      const { data: lesson } = await supabase
-        .from("lessons")
-        .select("id")
-        .eq("book_num", START_LESSON.book)
-        .eq("lesson_num", START_LESSON.lesson)
-        .maybeSingle()
+    }
+    loadQuestions()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
-      if (lesson) {
-        await supabase.from("user_progress").upsert(
-          {
-            user_id: user.id,
-            current_lesson_id: lesson.id,
-            lessons_done: [],
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "user_id" }
+  const finalizeAndLaunch = useCallback(async (rounds: RoundEvaluation[]) => {
+    const data = await completeAssessment(rounds)
+    setResult(data)
+    setScreen(4)
+  }, [])
+
+  async function handleRecord() {
+    if (!currentQuestion || recording) return
+    setActionError(null)
+    setRecording(true)
+
+    try {
+      const blob = await recordAudio(8000)
+      const formData = new FormData()
+      formData.append("audio", blob, `round-${round}.webm`)
+      formData.append("question", currentQuestion.question)
+      formData.append("referenceAnswer", currentQuestion.referenceAnswer)
+      formData.append("roundIndex", String(round))
+
+      const evaluation = await evaluateAssessmentRound(formData)
+      setCurrentEval(evaluation)
+      setEvaluations((prev) => {
+        const next = [...prev.filter((e) => e.roundIndex !== round), evaluation]
+        return next.sort((a, b) => a.roundIndex - b.roundIndex)
+      })
+      setScreen(3)
+    } catch (err) {
+      setActionError(
+        err instanceof AudioRecorderError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : "录音或评估失败"
+      )
+    } finally {
+      setRecording(false)
+    }
+  }
+
+  function continueAfterFeedback() {
+    setActionError(null)
+    const allRounds = currentEval
+      ? [...evaluations.filter((e) => e.roundIndex !== currentEval.roundIndex), currentEval].sort(
+          (a, b) => a.roundIndex - b.roundIndex
         )
+      : evaluations
+
+    if (round < totalRounds - 1) {
+      setRound((r) => r + 1)
+      setCurrentEval(null)
+      setScreen(2)
+      return
+    }
+
+    startTransition(async () => {
+      try {
+        await finalizeAndLaunch(allRounds)
+      } catch (err) {
+        setActionError(err instanceof Error ? err.message : "完成体验失败")
       }
-      router.push(`/protected/learn/${START_LESSON.book}/${START_LESSON.lesson}`)
     })
   }
 
-  function startRecording() {
-    setRecording(true)
-    setTimeout(() => {
-      setRecording(false)
-      setScreen(3)
-    }, 2800)
-  }
-
-  function nextFromFeedback() {
-    if (round < ROUNDS.length - 1) {
-      setRound((r) => r + 1)
-      setScreen(1)
-    } else {
-      setScreen(4)
-    }
+  function finish() {
+    if (!result) return
+    router.push(`/protected/learn/${result.bookNum}/${result.suggestedLessonNum}`)
   }
 
   const fade: React.CSSProperties = {
@@ -101,6 +149,9 @@ export default function OnboardingPage() {
     transform: visible ? "translateY(0)" : "translateY(8px)",
     transition: "opacity 300ms ease, transform 300ms ease",
   }
+
+  const roundScore = currentEval ? roundAverageScore(currentEval) : 0
+  const passedRound = roundScore >= PASS_SCORE
 
   return (
     <div
@@ -111,7 +162,14 @@ export default function OnboardingPage() {
       }}
     >
       <div className="w-full max-w-md flex flex-col flex-1" style={fade}>
-        {/* Screen 0 — Hook */}
+        {(loadError || actionError) && (
+          <div className="mb-4 flex items-start gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+            <span>{loadError ?? actionError}</span>
+          </div>
+        )}
+
+        {/* 0 — 产品承诺 */}
         {screen === 0 && (
           <div className="flex-1 flex flex-col items-center justify-center text-center">
             <div className="relative mb-8">
@@ -120,154 +178,202 @@ export default function OnboardingPage() {
                 <Mic className="w-9 h-9 text-primary" />
               </div>
             </div>
-            <h1 className="text-2xl font-bold text-foreground mb-3">3 分钟，测出你的英语</h1>
-            <p className="text-sm text-muted-foreground mb-10">开口说，AI 立刻给反馈</p>
+            <h1 className="text-2xl font-bold text-foreground mb-2">脱口而出，靠练不靠背</h1>
+            <p className="text-sm text-muted-foreground mb-1">AI 问，你答，说对为止</p>
+            <p className="text-sm text-muted-foreground mb-10 max-w-xs">
+              先看场景，开口说两句，体验 TalkFlow 怎么练嘴
+            </p>
             <button
               type="button"
+              disabled={loading || !!loadError || questions.length === 0}
               onClick={() => setScreen(1)}
-              className="w-full h-14 rounded-2xl bg-primary text-primary-foreground font-semibold text-lg"
+              className="w-full h-14 rounded-2xl bg-primary text-primary-foreground font-semibold text-lg disabled:opacity-50"
             >
-              开始测评 →
+              {loading ? "准备场景…" : "开始体验 →"}
             </button>
           </div>
         )}
 
-        {/* Screen 1 — Scene + question */}
+        {/* 1 — 怎么练 */}
         {screen === 1 && (
           <div className="flex-1 flex flex-col pt-4">
-            <div className="flex justify-center gap-2 mb-6">
-              {ROUNDS.map((_, i) => (
+            <h1 className="text-xl font-bold text-foreground mb-2">TalkFlow 怎么练？</h1>
+            <p className="text-sm text-muted-foreground mb-6">三句话，记住就够了</p>
+            <ul className="flex flex-col gap-4 mb-auto">
+              {RULES.map((rule, i) => (
+                <li
+                  key={rule.title}
+                  className="rounded-2xl border border-border bg-[#1a1a1a] px-4 py-4"
+                >
+                  <p className="text-sm font-semibold text-foreground">
+                    {i + 1}. {rule.title}
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">{rule.desc}</p>
+                </li>
+              ))}
+            </ul>
+            <button
+              type="button"
+              onClick={() => setScreen(2)}
+              className="mt-8 w-full h-14 rounded-2xl bg-primary text-primary-foreground font-semibold"
+            >
+              明白了，试第一句 →
+            </button>
+          </div>
+        )}
+
+        {/* 2 — 场景 + 问题 */}
+        {screen === 2 && currentQuestion && (
+          <div className="flex-1 flex flex-col pt-2">
+            <div className="flex justify-center gap-2 mb-4">
+              {questions.map((_, i) => (
                 <span
                   key={i}
                   className={`h-2 w-2 rounded-full ${i <= round ? "bg-primary" : "bg-muted"}`}
                 />
               ))}
             </div>
-            <div className="h-40 rounded-2xl bg-[#1a1a1a] border border-border mb-6 flex items-center justify-center text-muted-foreground text-sm">
-              场景：{ROUNDS[round].scene === "office" ? "办公室" : ROUNDS[round].scene === "cafe" ? "咖啡厅" : "机场"}
+            <p className="text-xs text-center text-muted-foreground mb-3">
+              体验 {round + 1} / {totalRounds}
+            </p>
+
+            <div className="h-44 rounded-2xl bg-[#1a1a1a] border border-border mb-5 overflow-hidden relative">
+              {currentQuestion.imageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={currentQuestion.imageUrl}
+                  alt=""
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="h-full flex flex-col items-center justify-center gap-2 text-muted-foreground">
+                  <ImageIcon className="w-8 h-8 opacity-40" />
+                  <span className="text-sm">{currentQuestion.sceneLabel}</span>
+                </div>
+              )}
+              <span className="absolute top-3 left-3 inline-flex items-center gap-1 rounded-full bg-primary/90 px-2.5 py-1 text-[10px] font-semibold text-white">
+                <ImageIcon className="w-3 h-3" />
+                看图说话
+              </span>
             </div>
+
             <div className="rounded-2xl bg-[#1a1a1a] border border-border px-4 py-3 mb-auto">
-              <p className="text-xs text-muted-foreground mb-1">AI</p>
-              <p className="text-lg text-foreground">{ROUNDS[round].question}</p>
+              <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                <MessageCircle className="w-3 h-3" /> AI 问你
+              </p>
+              <p className="text-lg text-foreground">{currentQuestion.question}</p>
             </div>
-            <button
-              type="button"
-              onClick={() => setScreen(2)}
-              className="mt-8 mx-auto w-20 h-20 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-[0_0_32px_rgba(16,185,129,0.45)]"
-              aria-label="开始录音"
-            >
-              <Mic className="w-8 h-8" />
-            </button>
+
+            <div className="mt-8 flex flex-col items-center gap-3">
+              <button
+                type="button"
+                onClick={handleRecord}
+                disabled={recording || isPending}
+                className={`w-20 h-20 rounded-full flex items-center justify-center shadow-[0_0_32px_rgba(16,185,129,0.45)] ${
+                  recording ? "bg-red-500 animate-pulse" : "bg-primary text-primary-foreground"
+                }`}
+                aria-label="开始说话"
+              >
+                {recording ? (
+                  <Loader2 className="w-8 h-8 animate-spin text-white" />
+                ) : (
+                  <Mic className="w-8 h-8" />
+                )}
+              </button>
+              <p className="text-xs text-muted-foreground">
+                {recording ? "正在听… 说完自动结束" : "点击麦克风，用英语回答"}
+              </p>
+            </div>
           </div>
         )}
 
-        {/* Screen 2 — Recording */}
-        {screen === 2 && (
-          <div className="flex-1 flex flex-col items-center justify-center text-center">
-            <p className="text-lg text-foreground mb-6">{recording ? "正在听…" : "准备好了吗？"}</p>
-            <div className="flex items-end gap-1 h-10 mb-8">
-              {[3, 6, 4, 8, 5, 7, 4].map((h, i) => (
-                <div
+        {/* 3 — 纠正反馈 */}
+        {screen === 3 && currentEval && currentQuestion && (
+          <div className="flex-1 flex flex-col pt-4">
+            <div className="flex justify-center gap-2 mb-6">
+              {questions.map((_, i) => (
+                <span
                   key={i}
-                  className="w-1.5 rounded-full bg-primary"
-                  style={{
-                    height: recording ? `${h * 4}px` : "4px",
-                    transition: "height 200ms ease",
-                  }}
+                  className={`h-2 w-2 rounded-full ${i <= round ? "bg-primary" : "bg-muted"}`}
                 />
               ))}
             </div>
-            <button
-              type="button"
-              onClick={startRecording}
-              disabled={recording}
-              className={`w-20 h-20 rounded-full flex items-center justify-center ${
-                recording ? "bg-red-500 animate-pulse" : "bg-primary"
-              } text-white`}
-            >
-              <Mic className="w-8 h-8" />
-            </button>
-            {!recording && (
-              <p className="text-xs text-muted-foreground mt-4">点击麦克风开始，约 3 秒自动结束</p>
+
+            <p className="text-sm text-muted-foreground mb-2">你说的：</p>
+            <div className="rounded-xl border border-border bg-[#1a1a1a] px-4 py-3 mb-4 text-foreground">
+              &ldquo;{currentEval.transcript}&rdquo;
+            </div>
+
+            <p className="text-sm text-muted-foreground mb-2">这样说更自然：</p>
+            <div className="rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 mb-2">
+              <p className="text-foreground flex items-start gap-2">
+                <Zap className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                {currentEval.suggestion}
+              </p>
+              <p className="text-xs text-primary mt-2">{currentEval.feedback}</p>
+            </div>
+
+            {!passedRound && (
+              <p className="text-xs text-amber-400/90 mb-auto mt-2">
+                正式练习里，AI 会一直等你说到更标准为止。再练一遍？
+              </p>
+            )}
+            {passedRound && <div className="mb-auto" />}
+
+            <div className="flex gap-3 mt-6">
+              <button
+                type="button"
+                className="flex-1 h-12 rounded-xl border border-border text-muted-foreground inline-flex items-center justify-center gap-1.5"
+                onClick={() => {
+                  speakEnglish(currentEval.suggestion)
+                  setScreen(2)
+                }}
+                disabled={recording || isPending}
+              >
+                <RotateCcw className="w-4 h-4" />
+                再练一遍
+              </button>
+              <button
+                type="button"
+                disabled={isPending}
+                className="flex-1 h-12 rounded-xl bg-primary text-primary-foreground font-medium disabled:opacity-50"
+                onClick={continueAfterFeedback}
+              >
+                {isPending
+                  ? "准备中…"
+                  : round < totalRounds - 1
+                    ? "下一句 →"
+                    : "看起点 →"}
+              </button>
+            </div>
+            {!passedRound && (
+              <button
+                type="button"
+                className="mt-3 text-xs text-muted-foreground underline"
+                onClick={continueAfterFeedback}
+              >
+                先跳过，后面正式练
+              </button>
             )}
           </div>
         )}
 
-        {/* Screen 3 — Feedback */}
-        {screen === 3 && (
-          <div className="flex-1 flex flex-col pt-4">
-            <div className="flex justify-center gap-2 mb-6">
-              {ROUNDS.map((_, i) => (
-                <span
-                  key={i}
-                  className={`h-2 w-2 rounded-full ${i <= round ? "bg-primary" : "bg-muted"}`}
-                />
-              ))}
-            </div>
-            <p className="text-sm text-muted-foreground mb-2">你说的：</p>
-            <div className="rounded-xl border border-border bg-[#1a1a1a] px-4 py-3 mb-4 text-foreground">
-              &ldquo;{ROUNDS[round].userSaid}&rdquo;
-            </div>
-            <p className="text-sm text-muted-foreground mb-2">AI 建议：</p>
-            <div className="rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 mb-auto">
-              <p className="text-foreground flex items-start gap-2">
-                <Zap className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-                {ROUNDS[round].suggestion}
-              </p>
-              <p className="text-xs text-primary mt-2">流利度 +1</p>
-            </div>
-            <div className="flex gap-3 mt-6">
-              <button
-                type="button"
-                className="flex-1 h-12 rounded-xl border border-border text-muted-foreground"
-                onClick={() => {
-                  speakEnglish(ROUNDS[round].suggestion)
-                  setScreen(2)
-                  setRecording(false)
-                }}
-              >
-                ↺ 再来一遍
-              </button>
-              <button
-                type="button"
-                className="flex-1 h-12 rounded-xl bg-primary text-primary-foreground font-medium"
-                onClick={nextFromFeedback}
-              >
-                继续下一题 →
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Screen 4 — Level reveal */}
-        {screen === 4 && (
+        {/* 4 — 出发 */}
+        {screen === 4 && result && (
           <div className="flex-1 flex flex-col items-center justify-center text-center">
-            <h1 className="text-2xl font-bold text-foreground mb-6">你的英语水平</h1>
-            <div className="w-full flex items-center gap-2 text-xs text-muted-foreground mb-2">
-              <span>A1</span>
-              <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
-                <div className="h-full bg-primary rounded-full animate-[grow_0.8s_ease-out_forwards]" style={{ width: "52%" }} />
-              </div>
-              <span>C2</span>
-            </div>
-            <p className="text-xl font-semibold text-primary mt-4">B1 · 日常对话级</p>
-            <div className="mt-8 rounded-2xl border border-border bg-[#1a1a1a] p-5 text-sm text-muted-foreground text-left w-full">
-              <p>✓ 流利度 &nbsp; ✓ 词汇量 &nbsp; ✓ 语法基础</p>
-              <p className="mt-2 text-foreground">已为你生成专属课程 · 从第 28 课开始</p>
-            </div>
-            <style>{`@keyframes grow { from { width: 0 } to { width: 52% } }`}</style>
-          </div>
-        )}
+            <h1 className="text-2xl font-bold text-foreground mb-2">准备好了，开练</h1>
+            <p className="text-sm text-muted-foreground mb-8">{result.readinessHint}</p>
 
-        {/* Screen 5 — Launch */}
-        {screen === 5 && (
-          <div className="flex-1 flex flex-col items-center justify-center text-center">
-            <h1 className="text-2xl font-bold text-foreground mb-6">准备好了！</h1>
             <div className="w-full rounded-2xl border border-primary/25 bg-[#1a1a1a] p-5 text-left mb-8">
-              <p className="text-lg font-semibold text-foreground">💬 日常对话 · 第 28 课</p>
-              <p className="text-sm text-muted-foreground mt-2">know · travel · station · weather</p>
-              <p className="text-xs text-muted-foreground mt-3">约 15 分钟 · 20 句口语练习</p>
+              <p className="text-lg font-semibold text-foreground">
+                {result.stageEmoji} {result.stageName} · 第 {result.suggestedLessonNum} 课
+              </p>
+              {result.vocabPreview && (
+                <p className="text-sm text-muted-foreground mt-2">{result.vocabPreview}</p>
+              )}
+              <p className="text-xs text-muted-foreground mt-3">约 15 分钟 · 场景图 + 开口练习</p>
             </div>
+
             <button
               type="button"
               disabled={isPending}
@@ -275,7 +381,7 @@ export default function OnboardingPage() {
               className="w-full h-14 rounded-2xl bg-primary text-primary-foreground font-semibold text-lg flex items-center justify-center gap-2"
             >
               {isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Mic className="w-5 h-5" />}
-              {isPending ? "准备中…" : "开始第一课 →"}
+              开口练第一课 →
             </button>
           </div>
         )}

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { X, Star } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { createCheckout } from "@/lib/api/checkout"
 
 interface UpgradeModalProps {
   open: boolean
@@ -27,12 +28,7 @@ export function UpgradeModal({ open, onClose, reason }: UpgradeModalProps) {
   async function checkout(plan: "basic" | "pro") {
     setLoading(plan)
     try {
-      const res = await fetch("/api/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan }),
-      })
-      const data = await res.json()
+      const data = await createCheckout(plan)
       if (data.url) {
         window.location.href = data.url
         return
@@ -104,7 +100,7 @@ export function UpgradeModal({ open, onClose, reason }: UpgradeModalProps) {
             <ul className="text-xs text-muted-foreground space-y-1 flex-1">
               <li>💬 日常对话 + 💼 职场流利</li>
               <li>🎯 高级表达</li>
-              <li>全 191 课 A1→C2</li>
+              <li>全 191 课 · 四个阶段</li>
             </ul>
             <div>
               <p className="text-2xl font-bold text-foreground">¥48<span className="text-sm font-normal text-muted-foreground">/月</span></p>

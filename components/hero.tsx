@@ -373,7 +373,7 @@ export function Hero({ locale }: HeroProps) {
                   <span className="text-muted-foreground">元/月</span>
                 </div>
                 <p className="text-sm text-muted-foreground mb-6">
-                  191 课完整体系，从 A1 到 C2
+                  191 课完整体系，四个阶段一路练到流利
                 </p>
                 <ul className="flex flex-col gap-3 mb-6 flex-1">
                   {["全部 191 课内容", "职场流利 + 高级表达", "AI 实时纠错", "完整复习系统", "学习数据分析", "优先客服支持"].map((item) => (

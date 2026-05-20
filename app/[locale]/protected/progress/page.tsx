@@ -169,7 +169,6 @@ export default async function ProgressPage() {
               <div className="flex-1 min-w-0">
                 <p className="text-sm text-foreground mb-1">
                   Book {row.book_num}
-                  {row.cefr_level ? ` · ${row.cefr_level}` : ""}
                 </p>
                 <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                   <div

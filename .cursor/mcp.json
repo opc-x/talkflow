@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "v0": {
+      "type": "http",
+      "url": "https://mcp.v0.dev",
+      "headers": {
+        "Authorization": "Bearer v1:CbybeJYUh4wxfl8o0Rn6Wj8e:vcp_6fGfZRbasEJCd7RpRek21z19zIGW0ZZOVND7XDqu0y38qP5ian1mSqUC"
+      }
+    }
+  }
+}

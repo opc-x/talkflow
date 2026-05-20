@@ -1,0 +1,21 @@
+{
+  "name": "talkflow-api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/backend/src/index.js"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.14.4",
+    "@supabase/supabase-js": "^2.49.8",
+    "hono": "^4.7.10",
+    "openai": "^6.37.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "tsx": "^4.19.4",
+    "typescript": "^5"
+  }
+}
