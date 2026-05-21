@@ -62,15 +62,17 @@ export default async function DashboardPage() {
   }
 
   let sceneImageUrl: string | null = null;
+  let sceneTitle: string | null = null;
   if (currentLesson?.id) {
     const { data: scene } = await supabase
       .from("scenes")
-      .select("image_url")
+      .select("image_url, title")
       .eq("lesson_id", currentLesson.id)
       .order("position")
       .limit(1)
       .maybeSingle();
     sceneImageUrl = scene?.image_url ?? null;
+    sceneTitle = scene?.title ?? null;
   }
 
   const today = new Date().toISOString();
@@ -107,6 +109,7 @@ export default async function DashboardPage() {
       currentLesson={currentLesson?.lesson_num}
       vocabPreview={vocabPreview}
       sceneImageUrl={sceneImageUrl}
+      sceneTitle={sceneTitle}
       resumeHref={resumeHref}
       onboardingHref={`/${locale}/onboarding`}
       reviewHref={`/${locale}/protected/review`}

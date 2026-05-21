@@ -56,15 +56,17 @@ export default async function LessonPage({ params }: Props) {
   const stageLabel = `${stage.emoji} ${stage.name}`;
 
   let sceneImageUrl: string | null = null;
+  let sceneTitle: string | null = null;
   if (lesson?.id) {
     const { data: scene } = await supabase
       .from("scenes")
-      .select("image_url")
+      .select("image_url, title, image_type")
       .eq("lesson_id", lesson.id)
       .order("position")
       .limit(1)
       .maybeSingle();
     sceneImageUrl = scene?.image_url ?? null;
+    sceneTitle = scene?.title ?? null;
   }
 
   const { data: termsRows } = await supabase
@@ -93,6 +95,7 @@ export default async function LessonPage({ params }: Props) {
       lessonId={lesson?.id ?? null}
       stageLabel={stageLabel}
       sceneImageUrl={sceneImageUrl}
+      sceneTitle={sceneTitle}
       vocabTerms={vocabTerms}
       totalSentences={Math.max(totalSentences, 1)}
     />

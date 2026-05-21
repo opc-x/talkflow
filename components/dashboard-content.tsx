@@ -19,6 +19,7 @@ export interface DashboardContentProps {
   currentLesson?: number
   vocabPreview?: string | null
   sceneImageUrl?: string | null
+  sceneTitle?: string | null
   resumeHref: string
   onboardingHref: string
   reviewHref: string
@@ -60,6 +61,7 @@ export function DashboardContent({
   currentLesson,
   vocabPreview,
   sceneImageUrl,
+  sceneTitle,
   resumeHref,
   onboardingHref,
   reviewHref,
@@ -101,7 +103,9 @@ export function DashboardContent({
                     第 {currentLesson} 课 · 约 15 分钟
                   </p>
                 )}
-                <p className="mt-1 text-2xl font-bold text-white">开口练习</p>
+                <p className="mt-1 text-2xl font-bold text-white">
+                  {sceneTitle ?? "开口练习"}
+                </p>
                 {vocabPreview && (
                   <p className="mt-2 line-clamp-2 text-sm text-white/75">{vocabPreview}</p>
                 )}

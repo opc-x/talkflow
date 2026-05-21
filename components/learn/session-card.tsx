@@ -40,6 +40,7 @@ interface Props {
   lessonId: number | null;
   stageLabel: string;
   sceneImageUrl?: string | null;
+  sceneTitle?: string | null;
   vocabTerms: VocabTerm[];
   totalSentences: number;
 }
@@ -58,6 +59,7 @@ export function SessionCard({
   lessonId,
   stageLabel,
   sceneImageUrl,
+  sceneTitle,
   vocabTerms,
   totalSentences,
 }: Props) {
@@ -244,7 +246,9 @@ export function SessionCard({
                 看图说话
               </span>
               <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-4 pb-3 pt-10">
-                <p className="text-sm font-medium text-white">本课场景</p>
+                <p className="text-sm font-medium text-white">
+                  {sceneTitle ?? "本课场景"}
+                </p>
                 <p className="text-xs text-white/70">
                   {vocabTerms.length > 0
                     ? `${vocabTerms.length} 个新词 · 先看图再开口`

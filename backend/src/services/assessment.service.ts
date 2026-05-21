@@ -67,6 +67,7 @@ export async function getAssessmentQuestions(
       .from("qa_pairs")
       .select("question, answer")
       .eq("lesson_num", lessonNum)
+      .eq("qa_category", "lesson")
       .not("answer", "is", null)
       .order("pair_index", { ascending: true })
       .limit(1)
