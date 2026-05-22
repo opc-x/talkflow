@@ -69,7 +69,7 @@ export default function Page({
 
           <div className="flex flex-col gap-2 mt-6">
             <Link
-              href="/auth/login"
+              href="/zh/auth/login"
               className="inline-block w-full h-11 rounded-xl text-sm font-semibold leading-[44px]"
               style={{ backgroundColor: "#10B981", color: "#ffffff" }}
             >

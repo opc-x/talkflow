@@ -10,6 +10,11 @@ function useInView(options?: IntersectionObserverInit) {
   useEffect(() => {
     const el = ref.current
     if (!el) return
+    const rect = el.getBoundingClientRect()
+    if (rect.top < window.innerHeight && rect.bottom > 0) {
+      setInView(true)
+      return
+    }
     const obs = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -17,7 +22,7 @@ function useInView(options?: IntersectionObserverInit) {
           obs.disconnect()
         }
       },
-      { threshold: 0.15, ...options }
+      { threshold: 0, rootMargin: "0px 0px -5% 0px", ...options }
     )
     obs.observe(el)
     return () => obs.disconnect()
@@ -182,7 +187,7 @@ function TestimonialCard({
         transform: hovered ? "translateY(-4px)" : "translateY(0px)",
         transition:
           "transform 300ms cubic-bezier(0.16,1,0.3,1), border-color 300ms cubic-bezier(0.16,1,0.3,1), box-shadow 300ms cubic-bezier(0.16,1,0.3,1), opacity 500ms ease",
-        opacity: inView ? 1 : 0,
+        opacity: 1,
         transitionDelay: inView ? `${index * 100}ms` : "0ms",
       }}
     >

@@ -148,7 +148,7 @@ export default async function StatsPage() {
         </div>
 
         <div className="rounded-2xl border border-border p-5 mb-6" style={{ backgroundColor: "#1a1a1a" }}>
-          <div className="text-sm text-muted-foreground mb-4">过去 30 天热力图</div>
+          <div className="text-sm text-muted-foreground mb-4">过去 5 周练习记录</div>
           <div className="grid grid-cols-7 gap-1 mb-2">
             {weekDays.map((day) => (
               <div key={day} className="text-center text-xs text-muted-foreground">{day}</div>

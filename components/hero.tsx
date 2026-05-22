@@ -22,12 +22,18 @@ function useInView(options?: IntersectionObserverInit) {
   useEffect(() => {
     const el = ref.current
     if (!el) return
+    // Check if already visible on mount (handles SSR/headless/fast load)
+    const rect = el.getBoundingClientRect()
+    if (rect.top < window.innerHeight && rect.bottom > 0) {
+      setInView(true)
+      return
+    }
     const obs = new IntersectionObserver(([entry]) => {
       if (entry.isIntersecting) {
         setInView(true)
         obs.disconnect()
       }
-    }, { threshold: 0.15, ...options })
+    }, { threshold: 0, rootMargin: "0px 0px -5% 0px", ...options })
     obs.observe(el)
     return () => obs.disconnect()
   }, [])
@@ -39,7 +45,7 @@ function Section({ children, className = "" }: { children: React.ReactNode; clas
   return (
     <div
       ref={ref}
-      className={`transition-all duration-500 ease-out ${inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"} ${className}`}
+      className={`transition-transform duration-500 ease-out ${inView ? "translate-y-0" : "translate-y-3"} ${className}`}
     >
       {children}
     </div>
@@ -469,7 +475,7 @@ export function Hero({ locale }: HeroProps) {
             <span className="font-bold text-foreground">TalkFlow</span>
           </div>
           <p className="text-sm text-muted-foreground text-center">
-            © 2026 TalkFlow · 脱口而出，靠练不靠背
+            © {new Date().getFullYear()} TalkFlow · 脱口而出，靠练不靠背
           </p>
         </div>
       </footer>
@@ -520,7 +526,9 @@ function ComparisonList() {
               ? isTalkFlow
                 ? "opacity-100 translate-y-0"
                 : "opacity-60 translate-y-0"
-              : "opacity-0 translate-y-3"
+              : isTalkFlow
+                ? "opacity-100 translate-y-3"
+                : "opacity-60 translate-y-3"
             }
           `}
           style={{

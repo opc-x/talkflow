@@ -64,6 +64,12 @@ export async function apiFetch<T>(
         408
       )
     }
+    if (err instanceof TypeError && err.message === "Failed to fetch") {
+      throw new ApiError(
+        "AI 测评服务未连接，请先运行 npm run dev:api（端口 4000）",
+        503
+      )
+    }
     throw err
   } finally {
     clearTimeout(timer)

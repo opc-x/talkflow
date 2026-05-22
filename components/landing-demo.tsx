@@ -51,9 +51,9 @@ export function LandingDemo() {
       <div
         className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-14 items-center"
         style={{
-          opacity: inView ? 1 : 0,
+          opacity: 1,
           transform: inView ? "translateY(0)" : "translateY(20px)",
-          transition: "opacity 600ms ease-out, transform 600ms ease-out",
+          transition: "transform 600ms ease-out",
         }}
       >
         {/* ── LEFT: Picture Practice Card ── */}
@@ -150,9 +150,9 @@ function PictureCard({ inView }: { inView: boolean }) {
 /* ─── Chat bubble renderer ───────────────────────────────────── */
 function ChatBubble({ item, inView }: { item: ChatItem; inView: boolean }) {
   const wrapStyle: React.CSSProperties = {
-    opacity: inView ? 1 : 0,
+    opacity: 1,
     transform: inView ? "translateY(0)" : "translateY(8px)",
-    transition: `opacity 400ms ease-out ${item.delay}ms, transform 400ms ease-out ${item.delay}ms`,
+    transition: `transform 400ms ease-out ${item.delay}ms`,
   }
 
   if (item.kind === "ai") {
@@ -263,9 +263,9 @@ function RightCopy({ inView }: { inView: boolean }) {
   return (
     <div
       style={{
-        opacity: inView ? 1 : 0,
+        opacity: 1,
         transform: inView ? "translateX(0)" : "translateX(24px)",
-        transition: "opacity 500ms ease-out 150ms, transform 500ms ease-out 150ms",
+        transition: "transform 500ms ease-out 150ms",
       }}
     >
       {/* Badge */}

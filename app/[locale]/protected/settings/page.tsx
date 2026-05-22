@@ -22,7 +22,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(async ({ data: { user } }) => {
+    supabase.auth.getUser().then(async ({ data: { user } }: { data: { user: { id: string; email?: string } | null } }) => {
       if (!user) return;
       setEmail(user.email ?? "");
       setUserId(user.id);
@@ -86,7 +86,7 @@ export default function SettingsPage() {
         <div className="flex flex-col gap-1.5">
           <Label className="text-sm">密码</Label>
           <Button variant="outline" asChild className="rounded-xl w-fit">
-            <Link href="/auth/update-password">修改密码 →</Link>
+            <Link href="/zh/auth/update-password">修改密码 →</Link>
           </Button>
         </div>
       </Card>

@@ -73,6 +73,7 @@ export function SessionCard({
   const [pairIdx, setPairIdx] = useState(0);
   const [done, setDone] = useState(false);
   const [nextHref, setNextHref] = useState<string | null>(null);
+  const [thumbFailed, setThumbFailed] = useState(false);
   const [, startTransition] = useTransition();
 
   const grammarCount = useMemo(() => countGrammarNotes(segments), [segments]);
@@ -89,6 +90,7 @@ export function SessionCard({
   if (done) {
     return (
       <LessonComplete
+        locale={locale}
         lessonNum={lessonNum}
         segmentCount={segments.length}
         totalSentences={totalSentences}
@@ -127,7 +129,7 @@ export function SessionCard({
           const result = await completeLesson(lessonId);
           if (result.nextLesson) {
             setNextHref(
-              `/protected/learn/${result.nextLesson.book_num}/${result.nextLesson.lesson_num}`
+              `/${locale}/protected/learn/${result.nextLesson.book_num}/${result.nextLesson.lesson_num}`
             );
           }
         });
@@ -283,11 +285,16 @@ export function SessionCard({
 
         {phase !== "vocab" && pair && (
           <>
-            {sceneImageUrl && (
+            {sceneImageUrl && !thumbFailed && (
               <div className="mb-4 flex justify-end">
                 <div className="h-14 w-20 overflow-hidden rounded-lg border border-border">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={sceneImageUrl} alt="" className="h-full w-full object-cover" />
+                  <img
+                    src={sceneImageUrl}
+                    alt=""
+                    className="h-full w-full object-cover"
+                    onError={() => setThumbFailed(true)}
+                  />
                 </div>
               </div>
             )}
@@ -364,12 +371,12 @@ export function SessionCard({
         )}
 
         <div className="mt-6 text-center">
-          <Link
+          <a
             href={homeHref}
             className="text-sm text-muted-foreground hover:text-foreground"
           >
             返回首页
-          </Link>
+          </a>
         </div>
       </main>
     </div>
@@ -377,12 +384,14 @@ export function SessionCard({
 }
 
 function LessonComplete({
+  locale,
   lessonNum,
   segmentCount,
   totalSentences,
   grammarCount,
   nextHref,
 }: {
+  locale: string;
   lessonNum: number;
   segmentCount: number;
   totalSentences: number;
@@ -402,12 +411,12 @@ function LessonComplete({
         </p>
         <div className="space-y-3">
           <Button asChild size="lg" className="w-full rounded-2xl h-14">
-            <Link href={nextHref ?? `/protected/learn/1/${lessonNum + 1}`}>
+            <Link href={nextHref ?? `/${locale}/protected/learn/1/${lessonNum + 1}`}>
               第{lessonNum + 1}课 →
             </Link>
           </Button>
           <Button asChild size="lg" variant="ghost" className="w-full rounded-2xl h-14">
-            <Link href="/protected">回首页</Link>
+            <Link href={`/${locale}/protected`}>回首页</Link>
           </Button>
         </div>
       </div>

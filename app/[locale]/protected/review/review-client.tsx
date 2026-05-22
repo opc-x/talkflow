@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -23,12 +24,14 @@ interface ReviewItem {
 
 const RATINGS = [
   { label: "完全忘了", score: 0, cls: "border-destructive text-destructive hover:bg-destructive/10" },
-  { label: "有点印象", score: 2, cls: "border-amber-500 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950" },
+  { label: "有点印象", score: 1, cls: "border-amber-500 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950" },
   { label: "记得", score: 3, cls: "" },
   { label: "脱口而出", score: 5, cls: "bg-primary text-primary-foreground hover:bg-primary/90 border-primary" },
 ] as const;
 
 export function ReviewClient({ items }: { items: ReviewItem[] }) {
+  const params = useParams();
+  const locale = (params.locale as string) ?? "zh";
   const [idx, setIdx] = useState(0);
   const [revealed, setRevealed] = useState(false);
   const [correct, setCorrect] = useState(0);
@@ -46,7 +49,7 @@ export function ReviewClient({ items }: { items: ReviewItem[] }) {
         {total > 0 && (
           <>
             <p className="text-muted-foreground mt-2 text-sm">
-              正确率 {rate}% · 共 {total} 题
+              答对率：{rate}% · 共 {total} 题
             </p>
             <div className="rounded-xl bg-muted p-4 mt-6 text-sm text-muted-foreground">
               做得好！养成每天复习的习惯，算法会帮你记住一切。
@@ -59,7 +62,7 @@ export function ReviewClient({ items }: { items: ReviewItem[] }) {
           </p>
         )}
         <Button asChild size="lg" className="mt-6 rounded-xl w-full">
-          <Link href="/protected">返回首页</Link>
+          <Link href={`/${locale}/protected`}>返回首页</Link>
         </Button>
       </div>
     );

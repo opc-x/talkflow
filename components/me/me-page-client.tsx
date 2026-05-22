@@ -58,8 +58,8 @@ export function MePageClient({
               {displayName[0]?.toUpperCase() ?? "?"}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-foreground font-semibold truncate">{email}</p>
-              <p className="text-sm text-muted-foreground">昵称</p>
+              <p className="text-foreground font-semibold truncate">{displayName}</p>
+              <p className="text-sm text-muted-foreground truncate">{email}</p>
             </div>
           </div>
           <NicknameEditor userId={userId} initialNickname={displayName} />

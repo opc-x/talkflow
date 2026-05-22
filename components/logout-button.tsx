@@ -11,7 +11,7 @@ export function LogoutButton({ variant }: { variant?: "menu" | "button" | "text"
   const logout = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
-    router.push("/auth/login");
+    router.push("/zh/auth/login");
   };
 
   if (variant === "menu") {

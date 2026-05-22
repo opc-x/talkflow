@@ -23,7 +23,7 @@ export function UpdatePasswordForm() {
     try {
       const { error } = await supabase.auth.updateUser({ password })
       if (error) throw error
-      router.push("/protected")
+      router.push("/zh/protected")
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "操作失败，请稍后再试")
     } finally {

@@ -22,7 +22,7 @@ export default async function LessonPage({ params }: Props) {
   const bookNum = parseInt(bookNumStr);
   const lessonNum = parseInt(lessonNumStr);
 
-  if (isNaN(bookNum) || isNaN(lessonNum)) redirect("/protected/learn/1/1");
+  if (isNaN(bookNum) || isNaN(lessonNum)) redirect(`/zh/protected/learn/1/1`);
 
   const supabase = await createClient();
 
@@ -47,7 +47,7 @@ export default async function LessonPage({ params }: Props) {
   ]);
 
   if (error || !blocks?.length) {
-    redirect("/protected/learn/1/1");
+    redirect(`/zh/protected/learn/1/1`);
   }
 
   const segments = groupIntoSegments(blocks);

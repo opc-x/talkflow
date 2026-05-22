@@ -10,6 +10,7 @@ export async function completeLesson(lessonId: number) {
   if (!user) return { error: "unauthenticated" };
 
   const now = new Date().toISOString();
+  const today = now.slice(0, 10);
 
   // Insert session record
   await supabase.from("session_records").insert({
@@ -18,23 +19,25 @@ export async function completeLesson(lessonId: number) {
     ended_at: now,
   });
 
-  // Get current progress
-  const { data: progress } = await supabase
-    .from("user_progress")
-    .select("lessons_done")
-    .eq("user_id", user.id)
-    .single();
+  // Get current progress + current lesson info in parallel
+  const [{ data: progress }, { data: cur }] = await Promise.all([
+    supabase
+      .from("user_progress")
+      .select("lessons_done")
+      .eq("user_id", user.id)
+      .single(),
+    supabase
+      .from("lessons")
+      .select("book_num, lesson_num")
+      .eq("id", lessonId)
+      .single(),
+  ]);
 
+  // Store lesson_num (not lesson id) so map/progress comparisons work correctly
   const done: number[] = progress?.lessons_done ?? [];
-  if (!done.includes(lessonId)) done.push(lessonId);
+  if (cur && !done.includes(cur.lesson_num)) done.push(cur.lesson_num);
 
   // Find next lesson
-  const { data: cur } = await supabase
-    .from("lessons")
-    .select("book_num, lesson_num")
-    .eq("id", lessonId)
-    .single();
-
   let nextLesson: { id: number; book_num: number; lesson_num: number } | null =
     null;
   if (cur) {
@@ -70,6 +73,27 @@ export async function completeLesson(lessonId: number) {
     },
     { onConflict: "user_id" }
   );
+
+  // Populate SRS queue with all qa_pairs from this lesson (skip existing)
+  const { data: qaPairs } = await supabase
+    .from("qa_pairs")
+    .select("id")
+    .eq("lesson_id", lessonId);
+
+  if (qaPairs?.length) {
+    await supabase.from("review_schedule").upsert(
+      qaPairs.map((q: { id: number }) => ({
+        user_id: user.id,
+        qa_pair_id: q.id,
+        target_type: "qa_pair" as const,
+        next_review_at: today,
+        interval_days: 1,
+        ease_factor: 2.5,
+        rep_count: 0,
+      })),
+      { onConflict: "user_id,qa_pair_id", ignoreDuplicates: true }
+    );
+  }
 
   return { nextLesson };
 }

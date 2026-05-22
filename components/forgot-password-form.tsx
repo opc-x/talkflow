@@ -21,7 +21,7 @@ export function ForgotPasswordForm() {
     setError(null)
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/update-password`,
+        redirectTo: `${window.location.origin}/zh/auth/update-password`,
       })
       if (error) throw error
       setSuccess(true)
@@ -73,7 +73,7 @@ export function ForgotPasswordForm() {
               重置链接已发送到 <span style={{ color: "#F5F5F5" }}>{email}</span>，请查收邮箱。
             </p>
             <Link
-              href="/auth/login"
+              href="/zh/auth/login"
               className="text-sm font-medium"
               style={{ color: "#10B981" }}
             >
@@ -146,7 +146,7 @@ export function ForgotPasswordForm() {
 
             <p className="text-center text-sm mt-5" style={{ color: "rgba(245,245,245,0.45)" }}>
               想起来了？{" "}
-              <Link href="/auth/login" className="font-medium" style={{ color: "#10B981" }}>
+              <Link href="/zh/auth/login" className="font-medium" style={{ color: "#10B981" }}>
                 返回登录
               </Link>
             </p>

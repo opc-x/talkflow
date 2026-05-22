@@ -83,7 +83,7 @@ function VocabSearch() {
         .limit(15);
 
       setResults(
-        (terms ?? []).map((t) => ({
+        (terms ?? []).map((t: { normalized: string; book_num: number; lesson_num: number; book_page: number }) => ({
           word: t.normalized,
           book_num: t.book_num,
           lesson_num: t.lesson_num,

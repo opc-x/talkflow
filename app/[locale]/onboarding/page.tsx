@@ -141,7 +141,7 @@ export default function OnboardingPage() {
 
   function finish() {
     if (!result) return
-    router.push(`/protected/learn/${result.bookNum}/${result.suggestedLessonNum}`)
+    router.push(`/zh/protected/learn/${result.bookNum}/${result.suggestedLessonNum}`)
   }
 
   const fade: React.CSSProperties = {
@@ -324,8 +324,8 @@ export default function OnboardingPage() {
               <button
                 type="button"
                 className="flex-1 h-12 rounded-xl border border-border text-muted-foreground inline-flex items-center justify-center gap-1.5"
-                onClick={() => {
-                  speakEnglish(currentEval.suggestion)
+                onClick={async () => {
+                  await speakEnglish(currentEval.suggestion)
                   setScreen(2)
                 }}
                 disabled={recording || isPending}
