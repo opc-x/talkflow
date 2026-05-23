@@ -100,6 +100,138 @@ graph TB
 
 ---
 
+## DDD — 限界上下文地图
+
+```mermaid
+graph TB
+    subgraph CORE["核心域 Core Domain"]
+        LC["Learning Context\n课程学习·speak-first"]
+        AC["Assessment Context\n口语测评·CEFR定级"]
+    end
+
+    subgraph SUPPORT["支撑域 Supporting Domain"]
+        SR["SRS Context\n间隔复习·遗忘曲线"]
+        CC["Content Context\n课程内容·只读"]
+        PC["Progress Context\n学习进度·当前位置"]
+    end
+
+    subgraph GENERIC["通用域 Generic Domain"]
+        SUB["Subscription Context\n订阅·plan管理"]
+        ID["Identity Context\n用户身份·Auth"]
+    end
+
+    AC -->|AssessmentCompleted| PC
+    LC -->|LessonCompleted ⚠️| SR
+    SR -->|ReviewAnswered| SR
+    ID -->|UserRegistered| PC
+    ID -->|UserRegistered| SUB
+    SUB -->|SubscriptionChanged| LC
+    CC -->|提供静态内容| LC
+```
+
+> ⚠️ `LessonCompleted → SRS` 事件未实现：`completeLesson()` 当前不写 `review_schedule`，SRS 队列永远为空。
+
+---
+
+## DDD — 聚合根 & 实体 & 值对象
+
+```mermaid
+classDiagram
+    class LearningSession {
+        <<Aggregate Root>>
+        +SessionId id
+        +UserId userId
+        +LessonId lessonId
+        +SpeakingAttempt[] attempts
+        +complete()
+        +addAttempt(audio, score)
+    }
+
+    class PlacementTest {
+        <<Aggregate Root>>
+        +TestId id
+        +UserId userId
+        +EvaluationRound[] rounds
+        +CEFRResult result
+        +addRound(question, transcript, score)
+        +complete() CEFRResult
+    }
+
+    class ReviewCard {
+        <<Aggregate Root>>
+        +CardId id
+        +QAPairId qaPairId
+        +UserId userId
+        +SRSState state
+        +answer(score 1~5)
+        +isDue() bool
+    }
+
+    class UserProgress {
+        <<Aggregate Root>>
+        +UserId userId
+        +LessonId currentLesson
+        +LessonId[] completedLessons
+        +advanceTo(lessonId)
+        +markComplete(lessonId)
+    }
+
+    class Subscription {
+        <<Aggregate Root>>
+        +UserId userId
+        +Plan plan
+        +SubscriptionStatus status
+        +upgrade(plan)
+        +cancel()
+    }
+
+    class SRSState {
+        <<Value Object>>
+        +Date nextReviewAt
+        +Float easeFactor
+        +Int intervalDays
+        +Int repCount
+        +recalculate(score) SRSState
+    }
+
+    class CEFRResult {
+        <<Value Object>>
+        +CEFRLevel level
+        +Float confidence
+        +LessonId startingLesson
+    }
+
+    class Plan {
+        <<Value Object>>
+        +PlanType type
+        +feature(key) bool
+    }
+
+    LearningSession --> SpeakingAttempt
+    PlacementTest --> EvaluationRound
+    PlacementTest --> CEFRResult
+    ReviewCard --> SRSState
+    Subscription --> Plan
+```
+
+---
+
+## DDD — 领域事件流
+
+```mermaid
+graph LR
+    UR["UserRegistered"] -->|初始化| UP["UserProgress\n从 A1 开始"]
+    UR -->|创建| FS["Subscription\nfree plan"]
+
+    AC["AssessmentCompleted\nCEFRLevel"] -->|设置起点| UP
+
+    LC["LessonCompleted\nlessonId + userId"] -->|⚠️ 未实现| RC["创建 ReviewCards\n为所有 QAPairs"]
+
+    RA["ReviewAnswered\nscore 1~5"] -->|SM-2 算法| SS["更新 SRSState\nnext_review_at\nease_factor"]
+```
+
+---
+
 ## 本地运行
 
 ```bash
