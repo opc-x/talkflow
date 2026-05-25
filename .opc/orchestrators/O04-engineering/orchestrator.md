@@ -29,3 +29,24 @@ DB        Supabase PostgreSQL
 
 - S01-srs-bug.md — SRS 队列未填充 P0 修复
 - S02-speaking-assessment.md — Whisper+GPT-4o 评估链路
+
+---
+
+## 默认输出模板
+
+```
+[O04·工程 → S{NN}·{技能名}]
+
+## 变更
+- 文件：`{路径}`
+- 改动：{一句话描述}
+
+## 验证
+- [ ] npm run dev 跑通
+- [ ] npx tsc --noEmit 通过
+- [ ] npm run lint 通过
+
+---
+状态更新：{有/无}
+回流候选：{通用模式 / 无}
+```
