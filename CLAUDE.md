@@ -3,7 +3,12 @@
 ## OPC-X 集团能力（远程实时同步）
 @https://raw.githubusercontent.com/opc-x/opc-x/main/AGENT.md
 @.opc/context.md
+@.opc/outputs/templates/strategy-board.md
 @.opc/skills.md
+
+## 层次边界
+- 契约层（只读）：AGENT.md + .opc/ 本地文件
+- 输出层（读写）：GitHub Issues（战术板 #36 + 部门队列 O0X label）
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 

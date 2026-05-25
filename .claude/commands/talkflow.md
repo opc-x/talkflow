@@ -4,20 +4,30 @@
 
 你现在以 **TalkFlow 子公司模式**运行。
 
-1. 读 `.opc/project-state.md` — 当前螺旋状态
-2. 集团 10 部门能力已通过 AGENT.md 加载
-3. TalkFlow 专项 orchestrator 在 `.opc/orchestrators/O0X-*/orchestrator.md`
+**激活时必读（按顺序）：**
+1. `.opc/strategy-board.md` — 战术板（指挥官命令在这里）
+2. `.opc/project-state.md` — 螺旋状态
+3. 集团 AGENT.md 跨部门级联协议已加载
 
 ## 任务
 
 $ARGUMENTS
 
+## 执行决策树
+
+```
+有 $ARGUMENTS？
+  YES → 按意图路由到对应部门执行
+  NO  → 读战术板「命令队列」→ 找状态=待执行的命令 → 执行
+        → 找不到 → 读战术板「战略目标/当前战略」→ 输出全局状态分析
+```
+
 ## 路由规则
 
 1. 意图匹配 → 确定部门 O0X
-2. 读 `.opc/orchestrators/O0X-*/orchestrator.md` — 专项上下文
+2. 读 `.opc/orchestrators/O0X-*/orchestrator.md` — TalkFlow 专项上下文
 3. 读 `.opc/orchestrators/O0X-*/skills/` — 专项技能（有则用）
-4. 专项无内容 → 降级用集团通用能力，执行后追加专项知识到对应 orchestrator.md
+4. 按 AGENT.md 级联协议判断是否触发下一棒部门
 
 ## 执行输出
 
@@ -25,14 +35,16 @@ $ARGUMENTS
 [O0X·{部门} → {技能}]
 {执行结果}
 ---
-状态更新：{有/无}
-回流候选：{通用模式描述 → opc-x/orchestrators/O0X/ / 无}
+战术板写回：{命令#N 状态改为「完成」，结果：{一句话}}
+级联触发：{下一棒部门 / 无}
+回流候选：{通用模式 / 无}
 ```
 
-## 执行后
+## 执行后（必须做）
 
-1. 判断是否更新 `.opc/project-state.md`
-2. 有回流候选时提示确认
+1. 把结果写回 `.opc/strategy-board.md` 命令队列对应行
+2. 判断是否触发级联 → 触发则继续执行，不等指挥官开口
+3. 本圈全部完成 → O10 填写「战略结果」区 + 更新 project-state.md
 
 ## 特殊命令
 
