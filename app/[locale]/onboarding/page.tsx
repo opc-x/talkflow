@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useTransition, useCallback } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useParams } from "next/navigation"
 import { Mic, Loader2, Zap, AlertCircle, ImageIcon, MessageCircle, RotateCcw } from "lucide-react"
 import { speakEnglish } from "@/lib/speech"
 import { recordAudio, AudioRecorderError } from "@/lib/audio-recorder"
@@ -44,6 +44,8 @@ export default function OnboardingPage() {
   const [visible, setVisible] = useState(true)
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
+  const params = useParams()
+  const locale = params.locale as string
 
   const currentQuestion = questions[round] ?? null
   const totalRounds = questions.length
@@ -103,13 +105,20 @@ export default function OnboardingPage() {
       })
       setScreen(3)
     } catch (err) {
-      setActionError(
-        err instanceof AudioRecorderError
-          ? err.message
-          : err instanceof Error
+      const domErr = err as DOMException
+      if (domErr?.name === "NotAllowedError" || domErr?.name === "PermissionDeniedError") {
+        setActionError(
+          "麦克风权限被拒绝。请在浏览器地址栏点击锁形图标 → 允许麦克风，然后刷新页面重试。"
+        )
+      } else {
+        setActionError(
+          err instanceof AudioRecorderError
             ? err.message
-            : "录音或评估失败"
-      )
+            : err instanceof Error
+              ? err.message
+              : "录音或评估失败"
+        )
+      }
     } finally {
       setRecording(false)
     }
@@ -141,7 +150,7 @@ export default function OnboardingPage() {
 
   function finish() {
     if (!result) return
-    router.push(`/zh/protected/learn/${result.bookNum}/${result.suggestedLessonNum}`)
+    router.push(`/${locale}/protected/learn/${result.bookNum}/${result.suggestedLessonNum}`)
   }
 
   const fade: React.CSSProperties = {
@@ -163,9 +172,20 @@ export default function OnboardingPage() {
     >
       <div className="w-full max-w-md flex flex-col flex-1" style={fade}>
         {(loadError || actionError) && (
-          <div className="mb-4 flex items-start gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-            <span>{loadError ?? actionError}</span>
+          <div className="mb-4 flex flex-col gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>{loadError ?? actionError}</span>
+            </div>
+            {actionError && (
+              <button
+                type="button"
+                onClick={() => window.location.reload()}
+                className="self-start rounded-lg border border-red-500/40 px-3 py-1.5 text-xs text-red-100 hover:bg-red-500/10"
+              >
+                刷新重试
+              </button>
+            )}
           </div>
         )}
 
@@ -186,10 +206,10 @@ export default function OnboardingPage() {
             <button
               type="button"
               disabled={loading || !!loadError || questions.length === 0}
-              onClick={() => setScreen(1)}
+              onClick={() => setScreen(2)}
               className="w-full h-14 rounded-2xl bg-primary text-primary-foreground font-semibold text-lg disabled:opacity-50"
             >
-              {loading ? "准备场景…" : "开始体验 →"}
+              {loading ? "准备场景…" : "开口练第一句 →"}
             </button>
           </div>
         )}
@@ -218,6 +238,20 @@ export default function OnboardingPage() {
               className="mt-8 w-full h-14 rounded-2xl bg-primary text-primary-foreground font-semibold"
             >
               明白了，试第一句 →
+            </button>
+          </div>
+        )}
+
+        {/* 2 — 场景 + 问题（题目缺失） */}
+        {screen === 2 && !currentQuestion && (
+          <div className="flex-1 flex flex-col items-center justify-center text-center px-4">
+            <p className="text-foreground mb-4">题目加载失败，请返回重试</p>
+            <button
+              type="button"
+              onClick={() => setScreen(1)}
+              className="rounded-xl border border-border px-4 py-2 text-sm text-muted-foreground hover:text-foreground"
+            >
+              返回
             </button>
           </div>
         )}

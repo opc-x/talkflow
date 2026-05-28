@@ -7,7 +7,7 @@ import type { VocabTerm } from "@/components/learn/vocab-list";
 import { normalizeDisplayText } from "@/lib/normalize-display-text";
 
 interface Props {
-  params: Promise<{ bookNum: string; lessonNum: string }>;
+  params: Promise<{ locale: string; bookNum: string; lessonNum: string }>;
 }
 
 function countSentences(segments: ReturnType<typeof groupIntoSegments>) {
@@ -18,18 +18,18 @@ function countSentences(segments: ReturnType<typeof groupIntoSegments>) {
 }
 
 export default async function LessonPage({ params }: Props) {
-  const { bookNum: bookNumStr, lessonNum: lessonNumStr } = await params;
+  const { locale, bookNum: bookNumStr, lessonNum: lessonNumStr } = await params;
   const bookNum = parseInt(bookNumStr);
   const lessonNum = parseInt(lessonNumStr);
 
-  if (isNaN(bookNum) || isNaN(lessonNum)) redirect(`/zh/protected/learn/1/1`);
+  if (isNaN(bookNum) || isNaN(lessonNum)) redirect(`/${locale}/protected/learn/1/1`);
 
   const supabase = await createClient();
 
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect("/auth/login");
+  if (!user) redirect(`/${locale}/auth/login`);
 
   const [{ data: lesson }, { data: blocks, error }] = await Promise.all([
     supabase
@@ -40,14 +40,16 @@ export default async function LessonPage({ params }: Props) {
       .single(),
     supabase
       .from("content_blocks")
-      .select("id, block_type, text, book_num, lesson_num, book_page, pdf_page, stage")
+      .select(
+        "id, block_type, text, book_num, lesson_num, book_page, pdf_page, stage, ai_explanation",
+      )
       .eq("book_num", bookNum)
       .eq("lesson_num", lessonNum)
       .in("block_type", ["lexical_block", "qa_block", "grammar_note"]),
   ]);
 
   if (error || !blocks?.length) {
-    redirect(`/zh/protected/learn/1/1`);
+    redirect(`/${locale}/protected/learn/1/1`);
   }
 
   const segments = groupIntoSegments(blocks);
@@ -71,19 +73,18 @@ export default async function LessonPage({ params }: Props) {
 
   const { data: termsRows } = await supabase
     .from("terms")
-    .select("term, normalized, metadata")
+    .select("term, normalized, definition, phonetic")
     .eq("book_num", bookNum)
     .eq("lesson_num", lessonNum)
     .limit(40);
 
-  type TermRow = { term: string; normalized: string; metadata: unknown };
+  type TermRow = { term: string; normalized: string; definition: string | null; phonetic: string | null };
   const vocabTerms: VocabTerm[] = ((termsRows as TermRow[] | null) ?? []).map((row) => {
-    const meta = row.metadata as { ipa?: string; zh_cn?: string } | null;
-    const rawTerm = (row.normalized || row.term) as string;
+    const rawTerm = (row.term || row.normalized) as string;
     return {
       term: normalizeDisplayText(rawTerm),
-      ipa: meta?.ipa ? normalizeDisplayText(meta.ipa) : null,
-      zh_cn: meta?.zh_cn ? normalizeDisplayText(meta.zh_cn) : null,
+      definition: row.definition ? normalizeDisplayText(row.definition) : null,
+      phonetic: row.phonetic ? normalizeDisplayText(row.phonetic) : null,
     };
   });
 

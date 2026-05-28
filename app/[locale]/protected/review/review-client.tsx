@@ -35,6 +35,7 @@ export function ReviewClient({ items }: { items: ReviewItem[] }) {
   const [idx, setIdx] = useState(0);
   const [revealed, setRevealed] = useState(false);
   const [correct, setCorrect] = useState(0);
+  const [rateError, setRateError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const total = items.length;
 
@@ -73,10 +74,16 @@ export function ReviewClient({ items }: { items: ReviewItem[] }) {
 
   function rate(score: number) {
     startTransition(async () => {
-      await rateReview(item.id, score, item.interval_days, item.ease_factor, item.rep_count);
-      if (score >= 3) setCorrect((c) => c + 1);
-      setIdx((i) => i + 1);
-      setRevealed(false);
+      try {
+        await rateReview(item.id, score, item.interval_days, item.ease_factor, item.rep_count);
+        setRateError(null);
+        if (score >= 3) setCorrect((c) => c + 1);
+        setIdx((i) => i + 1);
+        setRevealed(false);
+      } catch (err) {
+        console.error("rateReview failed", err);
+        setRateError("评分保存失败，请重试");
+      }
     });
   }
 
@@ -104,6 +111,9 @@ export function ReviewClient({ items }: { items: ReviewItem[] }) {
       </div>
 
       {/* Card */}
+      {rateError && (
+        <p className="text-sm text-destructive text-center mb-4">{rateError}</p>
+      )}
       <Card className="rounded-2xl border p-8">
         <p className="text-xs text-muted-foreground mb-4 text-center">
           {item.stageLabel} · 第{item.lesson_num}课 · 上次 {item.daysSince} 天前

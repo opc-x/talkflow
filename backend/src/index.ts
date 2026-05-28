@@ -1,3 +1,4 @@
+try { process.loadEnvFile(".env") } catch {}
 import { serve } from "@hono/node-server"
 import { createApp } from "./app.js"
 import { config } from "./env.js"

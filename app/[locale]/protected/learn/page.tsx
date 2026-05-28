@@ -1,7 +1,12 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
-export default async function LearnIndexPage() {
+interface Props {
+  params: Promise<{ locale: string }>;
+}
+
+export default async function LearnIndexPage({ params }: Props) {
+  const { locale } = await params;
   const supabase = await createClient();
   const {
     data: { user },
@@ -22,9 +27,9 @@ export default async function LearnIndexPage() {
       .single();
 
     if (lesson) {
-      redirect(`/protected/learn/${lesson.book_num}/${lesson.lesson_num}`);
+      redirect(`/${locale}/protected/learn/${lesson.book_num}/${lesson.lesson_num}`);
     }
   }
 
-  redirect("/protected/learn/1/1");
+  redirect(`/${locale}/protected/learn/1/1`);
 }

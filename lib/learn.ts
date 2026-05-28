@@ -9,11 +9,13 @@ export interface ContentBlock {
   book_page: number;
   pdf_page: number;
   stage: number;
+  ai_explanation?: string | null;
 }
 
 export interface QAPair {
   question: string; // empty string for grammar notes
   answer: string;
+  explanation?: string | null; // grammar_note: Chinese AI explanation
 }
 
 export interface Segment {
@@ -32,7 +34,13 @@ function parseBlock(block: ContentBlock): QAPair[] {
   if (!text) return [];
 
   if (block.block_type === "grammar_note") {
-    return [{ question: "", answer: text }];
+    return [
+      {
+        question: "",
+        answer: text,
+        explanation: block.ai_explanation ?? null,
+      },
+    ];
   }
 
   // Split "Q: ... A: ... | Q: ... A: ..." into individual pairs

@@ -1,12 +1,11 @@
 "use client";
 
-import { useState, useTransition, useMemo } from "react";
+import { useState, useTransition, useMemo, Component, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   ChevronLeft,
-  Mic,
   Volume2,
   CheckCircle2,
   ArrowRight,
@@ -30,6 +29,35 @@ const VocabList = dynamic(
     ),
   },
 );
+
+class VocabListErrorBoundary extends Component<
+  { children: ReactNode },
+  { hasError: boolean }
+> {
+  state = { hasError: false };
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="px-3 py-6 text-center">
+          <p className="text-sm text-muted-foreground mb-3">词汇加载失败</p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="rounded-lg border border-border px-3 py-1.5 text-xs text-foreground hover:bg-muted"
+          >
+            点击刷新
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 type Phase = "vocab" | "question" | "answer";
 
@@ -73,6 +101,7 @@ export function SessionCard({
   const [pairIdx, setPairIdx] = useState(0);
   const [done, setDone] = useState(false);
   const [nextHref, setNextHref] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [thumbFailed, setThumbFailed] = useState(false);
   const [, startTransition] = useTransition();
 
@@ -91,17 +120,35 @@ export function SessionCard({
     return (
       <LessonComplete
         locale={locale}
+        bookNum={bookNum}
         lessonNum={lessonNum}
         segmentCount={segments.length}
         totalSentences={totalSentences}
         grammarCount={grammarCount}
         nextHref={nextHref}
+        saveError={saveError}
       />
     );
   }
 
   const segment = segments[segIdx];
-  if (!segment) return null;
+  if (!segment) {
+    return (
+      <div
+        className="flex-1 flex flex-col items-center justify-center px-6 py-12"
+        style={{ background: "#111111", color: "#F5F5F5" }}
+      >
+        <p className="mb-4">内容加载异常</p>
+        <button
+          type="button"
+          onClick={() => router.push(homeHref)}
+          className="rounded-xl border border-border px-4 py-2 text-sm hover:bg-[#1a1a1a]"
+        >
+          返回首页
+        </button>
+      </div>
+    );
+  }
 
   const pair = segment.pairs[pairIdx] ?? null;
   const isGrammarNote = pair !== null && pair.question === "";
@@ -113,38 +160,62 @@ export function SessionCard({
       .filter((p) => p.question !== "").length +
     (phase !== "vocab" && !isGrammarNote ? 1 : 0);
 
-  function nextPairOrSegment() {
-    if (pairIdx < segment.pairs.length - 1) {
-      const next = segment.pairs[pairIdx + 1];
-      setPairIdx((p) => p + 1);
-      setPhase(next.question === "" ? "answer" : "question");
-    } else if (segIdx < segments.length - 1) {
-      setSegIdx((s) => s + 1);
-      setPairIdx(0);
-      setPhase("vocab");
-    } else {
-      setDone(true);
-      if (lessonId) {
-        startTransition(async () => {
+  function finishLesson() {
+    setDone(true);
+    if (lessonId) {
+      startTransition(async () => {
+        try {
           const result = await completeLesson(lessonId);
+          setSaveError(null);
           if (result.nextLesson) {
             setNextHref(
               `/${locale}/protected/learn/${result.nextLesson.book_num}/${result.nextLesson.lesson_num}`
             );
           }
-        });
+        } catch (err) {
+          console.error("completeLesson failed", err);
+          setSaveError("进度保存失败，请点击重试");
+        }
+      });
+    }
+  }
+
+  function nextPairOrSegment() {
+    if (pairIdx < segment.pairs.length - 1) {
+      const next = segment.pairs[pairIdx + 1];
+      setPairIdx((p) => p + 1);
+      setPhase(next.question === "" ? "answer" : "question");
+    } else {
+      let nextIdx = segIdx + 1;
+      while (nextIdx < segments.length && segments[nextIdx].pairs.length === 0) {
+        nextIdx++;
+      }
+      if (nextIdx >= segments.length) {
+        finishLesson();
+      } else {
+        const nextSeg = segments[nextIdx];
+        const first = nextSeg.pairs[0];
+        setSegIdx(nextIdx);
+        setPairIdx(0);
+        setPhase(first.question === "" ? "answer" : "question");
       }
     }
   }
 
   function startSegment() {
     if (segment.pairs.length === 0) {
-      if (segIdx < segments.length - 1) {
-        setSegIdx((s) => s + 1);
-        setPairIdx(0);
-        setPhase("vocab");
+      let nextIdx = segIdx + 1;
+      while (nextIdx < segments.length && segments[nextIdx].pairs.length === 0) {
+        nextIdx++;
+      }
+      if (nextIdx >= segments.length) {
+        finishLesson();
       } else {
-        setDone(true);
+        const nextSeg = segments[nextIdx];
+        const first = nextSeg.pairs[0];
+        setSegIdx(nextIdx);
+        setPairIdx(0);
+        setPhase(first.question === "" ? "answer" : "question");
       }
     } else {
       const first = segment.pairs[0];
@@ -264,7 +335,9 @@ export function SessionCard({
                 <p className="sticky top-0 z-10 bg-card/95 px-3 py-2 text-xs font-medium uppercase tracking-wider text-muted-foreground backdrop-blur-sm">
                   本课新词（点词可听）
                 </p>
-                <VocabList terms={vocabTerms} />
+                <VocabListErrorBoundary>
+                  <VocabList terms={vocabTerms} />
+                </VocabListErrorBoundary>
               </div>
             ) : (
               <p className="mb-4 text-lg font-medium text-foreground leading-relaxed">
@@ -340,10 +413,22 @@ export function SessionCard({
                 )}
                 {isGrammarNote && (
                   <div className="flex-1 flex flex-col justify-center">
-                    <p className="text-sm text-primary font-medium mb-2">📌 语法注释</p>
-                    <p className="text-xl leading-relaxed text-foreground whitespace-pre-wrap">
-                      {pair.answer}
-                    </p>
+                    <p className="text-sm text-primary font-medium mb-2">📌 语法要点</p>
+                    {pair.explanation ? (
+                      <p className="text-xl leading-relaxed text-foreground whitespace-pre-wrap">
+                        {pair.explanation}
+                      </p>
+                    ) : (
+                      <p className="text-xl leading-relaxed text-foreground whitespace-pre-wrap">
+                        {pair.answer}
+                      </p>
+                    )}
+                    <details className="mt-4">
+                      <summary className="text-sm text-muted-foreground cursor-pointer">
+                        查看原文
+                      </summary>
+                      <p className="mt-2 text-sm text-muted-foreground">{pair.answer}</p>
+                    </details>
                   </div>
                 )}
                 <div className="mt-8 flex gap-3">
@@ -385,18 +470,22 @@ export function SessionCard({
 
 function LessonComplete({
   locale,
+  bookNum,
   lessonNum,
   segmentCount,
   totalSentences,
   grammarCount,
   nextHref,
+  saveError,
 }: {
   locale: string;
+  bookNum: number;
   lessonNum: number;
   segmentCount: number;
   totalSentences: number;
   grammarCount: number;
   nextHref: string | null;
+  saveError: string | null;
 }) {
   return (
     <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
@@ -409,9 +498,12 @@ function LessonComplete({
           {segmentCount} 组词汇 · {totalSentences} 句问答
           {grammarCount > 0 ? ` · ${grammarCount} 条语法` : ""}
         </p>
+        {saveError && (
+          <p className="text-sm text-destructive mb-4">{saveError}</p>
+        )}
         <div className="space-y-3">
           <Button asChild size="lg" className="w-full rounded-2xl h-14">
-            <Link href={nextHref ?? `/${locale}/protected/learn/1/${lessonNum + 1}`}>
+            <Link href={nextHref ?? `/${locale}/protected/learn/${bookNum}/${lessonNum + 1}`}>
               第{lessonNum + 1}课 →
             </Link>
           </Button>
