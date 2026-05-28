@@ -1,5 +1,42 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 
+/** 日历周（周一至周日）；weeksAgo=0 本周至今，=1 上周整周 */
+function getWeekBounds(weeksAgo: number): { start: string; end: string } {
+  const now = new Date()
+  const day = now.getDay()
+  const mondayOffset = day === 0 ? -6 : 1 - day
+  const weekStart = new Date(now)
+  weekStart.setDate(now.getDate() + mondayOffset - weeksAgo * 7)
+  weekStart.setHours(0, 0, 0, 0)
+
+  const weekEnd = new Date(weekStart)
+  weekEnd.setDate(weekStart.getDate() + 7)
+
+  if (weeksAgo === 0) {
+    return { start: weekStart.toISOString(), end: now.toISOString() }
+  }
+  return { start: weekStart.toISOString(), end: weekEnd.toISOString() }
+}
+
+/** 本周/上周准确率：AVG(score)×20，无记录返回 null */
+export async function getWeekAccuracy(
+  supabase: SupabaseClient,
+  userId: string,
+  weeksAgo: number
+): Promise<number | null> {
+  const { start, end } = getWeekBounds(weeksAgo)
+  const { data } = await supabase
+    .from("qa_responses")
+    .select("score")
+    .eq("user_id", userId)
+    .gte("responded_at", start)
+    .lt("responded_at", end)
+
+  if (!data?.length) return null
+  const sum = data.reduce((acc, r) => acc + (r.score as number), 0)
+  return Math.round((sum / data.length) * 20)
+}
+
 export async function getAccuracyPercent(
   supabase: SupabaseClient,
   userId: string

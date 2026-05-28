@@ -1,6 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { getOpenAIClient } from "../lib/openai.js"
-import { buildAssessmentResult } from "../../../shared/assessment/placement.js"
+import {
+  buildAssessmentResult,
+  nextDifficulty,
+} from "../../../shared/assessment/placement.js"
 import type {
   AssessmentQuestion,
   AssessmentResult,
@@ -8,32 +11,18 @@ import type {
   RoundScores,
 } from "../../../shared/types/assessment.js"
 
-export const ASSESSMENT_LESSON_NUMS = [8, 35] as const
-
 const FALLBACK_QUESTIONS = [
   {
     roundIndex: 0,
-    lessonNum: 8,
-    sceneLabel: "入门场景",
-    question: "What do you do for work?",
-    referenceAnswer: "I'm a software engineer.",
+    lessonNum: 0,
+    sceneLabel: "B1",
+    question: "What do you think about learning English? Is it important?",
+    referenceAnswer:
+      "I think it is essential nowadays, especially for work and international communication.",
     imageUrl: null,
-  },
-  {
-    roundIndex: 1,
-    lessonNum: 35,
-    sceneLabel: "日常对话",
-    question: "What would you like to drink?",
-    referenceAnswer: "I'd like a coffee with no sugar, please.",
-    imageUrl: null,
+    difficultyScore: 3,
   },
 ] as const
-
-const SCENE_LABELS: Record<number, string> = {
-  8: "入门场景",
-  35: "日常对话",
-  70: "职场场景",
-}
 
 interface RawEvaluation {
   transcript: string
@@ -48,54 +37,67 @@ function clampScore(n: number): number {
   return Math.max(1, Math.min(10, Math.round(n)))
 }
 
+function mapQuestionRow(
+  q: {
+    id: string
+    cefr_level: string
+    difficulty_score: number
+    question: string
+    reference_answer: string
+    image_url: string | null
+  },
+  roundIndex: number
+): AssessmentQuestion {
+  return {
+    id: q.id,
+    roundIndex,
+    lessonNum: 0,
+    sceneLabel: q.cefr_level,
+    question: q.question,
+    referenceAnswer: q.reference_answer,
+    imageUrl: q.image_url ?? null,
+    difficultyScore: q.difficulty_score,
+  }
+}
+
 export async function getAssessmentQuestions(
   supabase: SupabaseClient
 ): Promise<AssessmentQuestion[]> {
-  const questions: AssessmentQuestion[] = []
+  const { data } = await supabase
+    .from("assessment_questions")
+    .select("*")
+    .eq("difficulty_score", 3)
+    .order("created_at", { ascending: false })
+    .limit(1)
 
-  for (let i = 0; i < ASSESSMENT_LESSON_NUMS.length; i++) {
-    const lessonNum = ASSESSMENT_LESSON_NUMS[i]
-    const fallback = FALLBACK_QUESTIONS[i]
-
-    const { data: lesson } = await supabase
-      .from("lessons")
-      .select("id, lesson_num")
-      .eq("lesson_num", lessonNum)
-      .maybeSingle()
-
-    const { data: qa } = await supabase
-      .from("qa_pairs")
-      .select("question, answer")
-      .eq("lesson_num", lessonNum)
-      .eq("qa_category", "lesson")
-      .not("answer", "is", null)
-      .order("pair_index", { ascending: true })
-      .limit(1)
-      .maybeSingle()
-
-    let imageUrl: string | null = null
-    if (lesson?.id) {
-      const { data: scene } = await supabase
-        .from("scenes")
-        .select("image_url")
-        .eq("lesson_id", lesson.id)
-        .order("position", { ascending: true })
-        .limit(1)
-        .maybeSingle()
-      imageUrl = scene?.image_url ?? null
-    }
-
-    questions.push({
-      roundIndex: i,
-      lessonNum,
-      sceneLabel: SCENE_LABELS[lessonNum] ?? fallback.sceneLabel,
-      question: qa?.question?.trim() || fallback.question,
-      referenceAnswer: qa?.answer?.trim() || fallback.referenceAnswer,
-      imageUrl,
-    })
+  if (!data || data.length === 0) {
+    return FALLBACK_QUESTIONS.map((q, i) => ({ ...q, roundIndex: i }))
   }
 
-  return questions
+  return data.map((q, i) => mapQuestionRow(q, i))
+}
+
+export async function getNextQuestion(
+  supabase: SupabaseClient,
+  currentDifficulty: number,
+  lastScore: number,
+  usedIds: string[]
+): Promise<AssessmentQuestion | null> {
+  const targetDifficulty = nextDifficulty(currentDifficulty, lastScore)
+
+  let query = supabase
+    .from("assessment_questions")
+    .select("*")
+    .eq("difficulty_score", targetDifficulty)
+
+  if (usedIds.length > 0) {
+    query = query.not("id", "in", `(${usedIds.join(",")})`)
+  }
+
+  const { data } = await query.limit(1)
+
+  if (!data || data.length === 0) return null
+  return mapQuestionRow(data[0], 0)
 }
 
 export async function transcribeAudio(audio: File): Promise<string> {
@@ -171,14 +173,16 @@ User said (transcript): ${transcript || "(empty or unclear)"}`,
 export async function completeAssessment(
   supabase: SupabaseClient,
   userId: string,
-  rounds: RoundEvaluation[]
+  rounds: RoundEvaluation[],
+  finalDifficulty = 3
 ): Promise<AssessmentResult> {
-  const preview = buildAssessmentResult(rounds, null, null)
+  const preview = buildAssessmentResult(rounds, null, null, finalDifficulty)
+  const lessonNum = preview.startingLessonNum
 
   const { data: lesson } = await supabase
     .from("lessons")
     .select("id, book_num, lesson_num")
-    .eq("lesson_num", preview.suggestedLessonNum)
+    .eq("lesson_num", lessonNum)
     .maybeSingle()
 
   let vocabPreview: string | null = null
@@ -195,7 +199,7 @@ export async function completeAssessment(
     }
   }
 
-  const result = buildAssessmentResult(rounds, lesson, vocabPreview)
+  const result = buildAssessmentResult(rounds, lesson, vocabPreview, finalDifficulty)
 
   if (lesson?.id) {
     await supabase.from("user_progress").upsert(

@@ -4,6 +4,7 @@ import {
   completeAssessment,
   evaluateTranscript,
   getAssessmentQuestions,
+  getNextQuestion,
   transcribeAudio,
 } from "../services/assessment.service.js"
 import type { AuthVariables } from "../middleware/auth.js"
@@ -15,6 +16,19 @@ assessment.get("/questions", async (c) => {
   const supabase = c.get("supabase")
   const questions = await getAssessmentQuestions(supabase)
   return c.json({ questions })
+})
+
+assessment.post("/next-question", async (c) => {
+  const supabase = c.get("supabase")
+  const { currentDifficulty, lastScore, usedIds } = await c.req.json()
+  const question = await getNextQuestion(
+    supabase,
+    Number(currentDifficulty ?? 3),
+    Number(lastScore ?? 5),
+    Array.isArray(usedIds) ? usedIds : []
+  )
+  if (!question) return c.json({ question: null })
+  return c.json({ question })
 })
 
 assessment.post("/evaluate", async (c) => {
@@ -60,7 +74,7 @@ assessment.post("/complete", async (c) => {
   const user = c.get("user")
   const supabase = c.get("supabase")
 
-  let body: { rounds?: RoundEvaluation[] }
+  let body: { rounds?: RoundEvaluation[]; finalDifficulty?: number }
   try {
     body = await c.req.json()
   } catch {
@@ -72,7 +86,12 @@ assessment.post("/complete", async (c) => {
     return c.json({ error: "rounds is required" }, 400)
   }
 
-  const result = await completeAssessment(supabase, user.id, rounds)
+  const result = await completeAssessment(
+    supabase,
+    user.id,
+    rounds,
+    Number(body.finalDifficulty ?? 3)
+  )
   return c.json(result)
 })
 

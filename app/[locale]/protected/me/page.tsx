@@ -3,10 +3,23 @@ import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { getLocale } from "next-intl/server";
 import { MePageClient } from "@/components/me/me-page-client";
-import { getAccuracyPercent, getUserPlan } from "@/lib/user-stats";
+import { getWeekAccuracy, getUserPlan } from "@/lib/user-stats";
+import { getStageForLesson, type Stage } from "@/lib/stages";
 import { normalizePlan } from "@/lib/subscription";
 
 type SessionRecordRow = { created_at: string };
+
+async function getLessonNumById(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  lessonId: number
+): Promise<number | null> {
+  const { data } = await supabase
+    .from("lessons")
+    .select("lesson_num")
+    .eq("id", lessonId)
+    .maybeSingle();
+  return data?.lesson_num ?? null;
+}
 
 async function getUserStats(userId: string) {
   const supabase = await createClient();
@@ -37,15 +50,21 @@ async function getUserStats(userId: string) {
     }
   }
 
-  const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
-  const { count: weekLessons } = await supabase
-    .from("session_records")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", userId)
-    .gte("created_at", weekAgo);
-
-  const [accuracy, userPlan, { data: subscription }] = await Promise.all([
-    getAccuracyPercent(supabase, userId),
+  const [
+    { count: masteredCount },
+    thisWeekAccuracy,
+    lastWeekAccuracy,
+    userPlan,
+    { data: subscription },
+    { data: progress },
+  ] = await Promise.all([
+    supabase
+      .from("review_schedule")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .gte("rep_count", 3),
+    getWeekAccuracy(supabase, userId, 0),
+    getWeekAccuracy(supabase, userId, 1),
     getUserPlan(supabase, userId),
     supabase
       .from("subscriptions")
@@ -54,13 +73,34 @@ async function getUserStats(userId: string) {
       .order("expires_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
+    supabase
+      .from("user_progress")
+      .select("current_lesson_id")
+      .eq("user_id", userId)
+      .maybeSingle(),
   ]);
+
+  let cefrStage: Stage | null = null;
+  if (progress?.current_lesson_id) {
+    const lessonNum = await getLessonNumById(
+      supabase,
+      progress.current_lesson_id
+    );
+    if (lessonNum) cefrStage = getStageForLesson(lessonNum);
+  }
 
   const tier = subscription?.plan
     ? normalizePlan(subscription.plan as string)
     : userPlan;
 
-  return { streak, weekLessons: weekLessons ?? 0, accuracy, tier };
+  return {
+    streak,
+    masteredCount: masteredCount ?? 0,
+    thisWeekAccuracy,
+    lastWeekAccuracy,
+    cefrStage,
+    tier,
+  };
 }
 
 export default async function MePage() {
@@ -90,8 +130,10 @@ export default async function MePage() {
         email={user.email ?? ""}
         displayName={displayName}
         streak={stats.streak}
-        weekLessons={stats.weekLessons}
-        accuracy={stats.accuracy}
+        masteredCount={stats.masteredCount}
+        thisWeekAccuracy={stats.thisWeekAccuracy}
+        lastWeekAccuracy={stats.lastWeekAccuracy}
+        cefrStage={stats.cefrStage}
         tier={stats.tier}
       />
     </Suspense>

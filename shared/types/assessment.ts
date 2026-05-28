@@ -1,10 +1,12 @@
 export interface AssessmentQuestion {
+  id?: string
   roundIndex: number
   lessonNum: number
   sceneLabel: string
   question: string
   referenceAnswer: string
   imageUrl: string | null
+  difficultyScore?: number
 }
 
 export interface RoundScores {
@@ -23,6 +25,8 @@ export interface RoundEvaluation {
 
 export interface AssessmentResult {
   suggestedLessonNum: number
+  startingLessonNum: number
+  cefrLevel: string
   bookNum: number
   lessonId: number | null
   stageName: string
