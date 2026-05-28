@@ -29,4 +29,10 @@ CREATE POLICY "authenticated users can read assessment questions"
   TO authenticated
   USING (true);
 
+CREATE POLICY "anon users can read assessment questions"
+  ON public.assessment_questions
+  FOR SELECT
+  TO anon
+  USING (true);
+
 GRANT SELECT ON public.assessment_questions TO authenticated;
