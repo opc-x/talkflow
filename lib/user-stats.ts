@@ -54,6 +54,7 @@ export async function getUserPlan(
     .maybeSingle()
 
   const { normalizePlan } = await import("@/lib/subscription")
+  if (process.env.DEV_UNLOCK_ALL === "true") return "pro"
   if (!data || data.status !== "active") return "free"
   return normalizePlan(data.plan as string)
 }

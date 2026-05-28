@@ -8,9 +8,11 @@ import { isStageLocked, type UserPlan } from "@/lib/subscription"
 import type { Stage } from "@/lib/stages"
 
 type LessonRow = {
-  id: string
+  id: number
   book_num: number
   lesson_num: number
+  title?: string | null
+  image_url?: string | null
 }
 
 interface MapClientProps {
@@ -106,7 +108,7 @@ export function MapClient({
       </div>
 
       {!isLocked ? (
-        <div className="grid grid-cols-6 gap-2 px-4 pb-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 px-4 pb-4">
           {lessons.map((lesson) => {
             const isDone = doneIds.includes(lesson.lesson_num)
             const isCurrent = lesson.lesson_num === currentLessonNum
@@ -114,15 +116,46 @@ export function MapClient({
               <Link
                 key={lesson.id}
                 href={`/${locale}/protected/learn/${lesson.book_num}/${lesson.lesson_num}`}
-                className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-medium transition-colors ${
+                className={`relative flex flex-col overflow-hidden rounded-2xl border transition-all ${
                   isDone
-                    ? "bg-primary/20 text-primary"
+                    ? "border-primary/40 bg-primary/10"
                     : isCurrent
-                    ? "bg-primary text-primary-foreground node-current"
-                    : "bg-muted text-muted-foreground hover:bg-muted/70"
+                    ? "border-primary ring-2 ring-primary/30 node-current"
+                    : "border-border bg-card hover:border-primary/30"
                 }`}
               >
-                {isDone ? "✓" : isCurrent ? "▶" : lesson.lesson_num}
+                <div className="aspect-[4/3] w-full bg-muted overflow-hidden">
+                  {lesson.image_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- external Supabase scene URLs
+                    <img
+                      src={lesson.image_url}
+                      alt=""
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="h-full w-full flex items-center justify-center text-muted-foreground text-xs">
+                      无图
+                    </div>
+                  )}
+                </div>
+                <div className="p-2">
+                  <p className="text-[11px] text-muted-foreground">
+                    第 {lesson.lesson_num} 课
+                  </p>
+                  <p className="text-xs font-medium text-foreground line-clamp-2 leading-tight mt-0.5">
+                    {lesson.title ?? `Lesson ${lesson.lesson_num}`}
+                  </p>
+                </div>
+                {isDone && (
+                  <span className="absolute top-1.5 right-1.5 text-[10px] bg-primary text-primary-foreground rounded-full px-1.5 py-0.5">
+                    ✓
+                  </span>
+                )}
+                {isCurrent && (
+                  <span className="absolute top-1.5 right-1.5 text-[10px] bg-primary text-primary-foreground rounded-full px-1.5 py-0.5">
+                    ▶
+                  </span>
+                )}
               </Link>
             )
           })}

@@ -45,7 +45,7 @@ export default async function MapPage({ searchParams }: Props) {
 
   const { data: lessons } = await supabase
     .from("lessons")
-    .select("id, book_num, lesson_num")
+    .select("id, book_num, lesson_num, scenes(title, image_url)")
     .gte("lesson_num", phaseInfo.start)
     .lte("lesson_num", phaseInfo.end)
     .order("lesson_num");
@@ -53,8 +53,38 @@ export default async function MapPage({ searchParams }: Props) {
   const rawDone = progress?.lessons_done;
   const doneIds = Array.isArray(rawDone) ? (rawDone as number[]) : [];
 
-  type LessonRow = { id: string; book_num: number; lesson_num: number };
-  const lessonRows = (lessons as LessonRow[] | null) ?? [];
+  type SceneEmbed = { title: string | null; image_url: string };
+  type LessonDbRow = {
+    id: number;
+    book_num: number;
+    lesson_num: number;
+    scenes: SceneEmbed[] | SceneEmbed | null;
+  };
+  type LessonRow = {
+    id: number;
+    book_num: number;
+    lesson_num: number;
+    title?: string | null;
+    image_url?: string | null;
+  };
+
+  function sceneFields(scenes: LessonDbRow["scenes"]): Pick<LessonRow, "title" | "image_url"> {
+    if (!scenes) return {};
+    const scene = Array.isArray(scenes) ? scenes[0] : scenes;
+    if (!scene) return {};
+    const url = scene.image_url;
+    const image_url =
+      url && url !== "pending" && url !== "" ? url : null;
+    return { title: scene.title, image_url };
+  }
+
+  const lessonRows: LessonRow[] =
+    (lessons as LessonDbRow[] | null)?.map((l) => ({
+      id: l.id,
+      book_num: l.book_num,
+      lesson_num: l.lesson_num,
+      ...sceneFields(l.scenes),
+    })) ?? [];
   const doneInPhase = lessonRows.filter((l) => doneIds.includes(l.lesson_num)).length;
   const total = lessonRows.length;
   const pct = total > 0 ? Math.round((doneInPhase / total) * 100) : 0;

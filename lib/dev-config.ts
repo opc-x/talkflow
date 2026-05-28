@@ -9,3 +9,8 @@ export function isDevToolsEnabled(): boolean {
 export function isDevBypassAuth(): boolean {
   return process.env.NEXT_PUBLIC_DEV_BYPASS_AUTH === "true"
 }
+
+/** Client + server: unlock all subscription gates in dev. Never true in production. */
+export function isDevUnlockAll(): boolean {
+  return process.env.NEXT_PUBLIC_DEV_UNLOCK_ALL === "true"
+}

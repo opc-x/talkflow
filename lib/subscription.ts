@@ -23,5 +23,6 @@ export function planLabel(plan: UserPlan): string {
 }
 
 export function isStageLocked(stagePlan: UserPlan, userPlan: UserPlan): boolean {
+  if (process.env.NEXT_PUBLIC_DEV_UNLOCK_ALL === "true") return false
   return PLAN_LEVELS[stagePlan] > PLAN_LEVELS[userPlan]
 }
