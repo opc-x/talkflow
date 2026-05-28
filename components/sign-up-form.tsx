@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { DevAuthTools } from "@/components/dev-auth-tools"
+import { COPY } from "@/lib/copy"
 
 // ─── Brand panel (shared visual) ────────────────────────────────────────────
 
@@ -167,7 +168,7 @@ export function SignUpForm({ locale = "zh", onSubmit }: SignUpFormProps) {
           {/* Header */}
           <div className="mb-7">
             <h2 className="font-bold text-2xl mb-1.5" style={{ color: "#F5F5F5" }}>
-              开始你的英语旅程
+              {COPY.journeyTitle}
             </h2>
             <p className="text-sm" style={{ color: "rgba(245,245,245,0.5)" }}>
               注册后直接开始练习，不需要信用卡

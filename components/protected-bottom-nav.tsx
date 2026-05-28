@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Home, Mic, RotateCcw, User } from "lucide-react"
+import { COPY } from "@/lib/copy"
 
 interface ProtectedBottomNavProps {
   locale: string
@@ -47,7 +48,7 @@ export function ProtectedBottomNav({
         <div className="relative w-[4.5rem] shrink-0 pointer-events-none">
           <Link
             href={micHref}
-            aria-label="开口练习"
+            aria-label={COPY.navPracticeLabel}
             className="pointer-events-auto absolute left-1/2 top-0 z-20 flex h-14 w-14 -translate-x-1/2 -translate-y-5 animate-breathe items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[0_0_0_4px_hsl(var(--background)),0_0_24px_rgba(16,185,129,0.6)] transition-colors hover:bg-primary/90"
           >
             <Mic className="h-6 w-6" />

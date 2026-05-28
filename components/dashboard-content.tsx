@@ -4,6 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { CheckCircle2, Mic } from "lucide-react"
 import { MarketScene } from "@/components/scenes/market-scene"
+import { COPY } from "@/lib/copy"
 
 const DISPLAY_STAGES = [
   { index: 1, name: "入门", emoji: "🌱" },
@@ -95,7 +96,7 @@ export function DashboardContent({
               </div>
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/25 to-black/5" />
               <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-primary/90 px-2.5 py-1 text-[10px] font-semibold text-white">
-                看图说话
+                {COPY.featureBadge}
               </span>
               <div className="absolute inset-x-0 bottom-0 p-5 pt-16">
                 {currentLesson && (
@@ -104,14 +105,14 @@ export function DashboardContent({
                   </p>
                 )}
                 <p className="mt-1 text-2xl font-bold text-white">
-                  {sceneTitle ?? "开口练习"}
+                  {sceneTitle ?? COPY.practiceLabel}
                 </p>
                 {vocabPreview && (
                   <p className="mt-2 line-clamp-2 text-sm text-white/75">{vocabPreview}</p>
                 )}
                 <div className="mt-4 flex h-12 items-center justify-center gap-2 rounded-xl bg-[#10B981] font-semibold text-white shadow-[0_8px_24px_rgba(16,185,129,0.45)]">
                   <Mic className="h-5 w-5" />
-                  进入场景 →
+                  {COPY.enterScene}
                 </div>
               </div>
             </article>
@@ -120,18 +121,18 @@ export function DashboardContent({
           <Link href={onboardingHref} className="block group">
             <article className="relative aspect-[4/5] max-h-[400px] min-h-[280px] w-full overflow-hidden rounded-3xl border border-white/10 shadow-[0_18px_60px_rgba(0,0,0,0.22)] transition-transform group-hover:scale-[1.01]">
               <div className="absolute inset-0 bg-[#0d2e20]">
-                <SceneHero imageUrl={null} />
+                <SceneHero imageUrl={sceneImageUrl} />
               </div>
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
               <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-primary/90 px-2.5 py-1 text-[10px] font-semibold text-white">
-                看图说话
+                {COPY.featureBadge}
               </span>
               <div className="absolute inset-x-0 bottom-0 p-5 pt-12 text-center">
-                <h2 className="text-xl font-bold text-white">开始你的英语旅程</h2>
+                <h2 className="text-xl font-bold text-white">{COPY.journeyTitle}</h2>
                 <p className="mt-2 text-sm text-white/75">先试两句，找到练嘴起点</p>
                 <div className="mt-5 flex h-14 items-center justify-center gap-2 rounded-2xl bg-[#10B981] text-lg font-semibold text-white shadow-[0_16px_36px_rgba(16,185,129,0.35)]">
                   <Mic className="h-5 w-5" />
-                  开始体验 →
+                  {COPY.startExperience}
                 </div>
               </div>
             </article>

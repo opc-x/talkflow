@@ -40,7 +40,7 @@ async function uploadToStorage(filename: string, buf: Buffer, mime = "image/png"
       "Content-Type": mime,
       "x-upsert": "true",
     },
-    body: buf,
+    body: new Uint8Array(buf),
   });
   if (!res.ok) {
     const body = await res.text();

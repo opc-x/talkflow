@@ -63,11 +63,21 @@ export default async function DashboardPage() {
 
   let sceneImageUrl: string | null = null;
   let sceneTitle: string | null = null;
-  if (currentLesson?.id) {
+  const sceneLessonId =
+    currentLesson?.id ??
+    (
+      await supabase
+        .from("lessons")
+        .select("id")
+        .eq("book_num", 1)
+        .eq("lesson_num", 1)
+        .maybeSingle()
+    ).data?.id;
+  if (sceneLessonId) {
     const { data: scene } = await supabase
       .from("scenes")
       .select("image_url, title")
-      .eq("lesson_id", currentLesson.id)
+      .eq("lesson_id", sceneLessonId)
       .order("position")
       .limit(1)
       .maybeSingle();

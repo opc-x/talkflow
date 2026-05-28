@@ -2,6 +2,7 @@
 
 import { useRef, useState, useEffect } from "react"
 import { Eye, Repeat, Zap } from "lucide-react"
+import { COPY } from "@/lib/copy"
 
 /* ─── Scroll-reveal hook ─────────────────────────────────────── */
 function useInView(options?: IntersectionObserverInit) {
@@ -99,7 +100,7 @@ function PictureCard({ inView }: { inView: boolean }) {
           className="absolute top-3 left-3 px-2.5 py-1 text-xs font-semibold rounded-full text-white"
           style={{ background: "rgba(16,185,129,0.85)" }}
         >
-          📷 看图说话
+          📷 {COPY.featureBadge}
         </span>
       </div>
 
@@ -276,7 +277,7 @@ function RightCopy({ inView }: { inView: boolean }) {
           color: "#10B981",
         }}
       >
-        ✦ 看图说话模式
+        ✦ {COPY.featureBadge}模式
       </span>
 
       {/* Heading */}

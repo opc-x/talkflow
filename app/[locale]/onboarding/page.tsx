@@ -12,6 +12,7 @@ import {
   evaluateAssessmentRound,
   completeAssessment,
 } from "@/lib/api/assessment"
+import { COPY } from "@/lib/copy"
 
 const RULES = [
   {
@@ -287,7 +288,7 @@ export default function OnboardingPage() {
               )}
               <span className="absolute top-3 left-3 inline-flex items-center gap-1 rounded-full bg-primary/90 px-2.5 py-1 text-[10px] font-semibold text-white">
                 <ImageIcon className="w-3 h-3" />
-                看图说话
+                {COPY.featureBadge}
               </span>
             </div>
 

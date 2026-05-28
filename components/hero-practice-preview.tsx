@@ -1,6 +1,7 @@
 "use client"
 
 import { Mic, Zap, CheckCircle2, ImageIcon } from "lucide-react"
+import { COPY } from "@/lib/copy"
 
 /** 单人 + 笔记本场景，便于热区「laptop」叙事；本地图避免外链抖动 */
 const SCENE_IMAGE = "/images/hero-scene-practice.jpg"
@@ -56,7 +57,7 @@ export function HeroPracticePreview() {
                 style={{ background: "rgba(16,185,129,0.88)" }}
               >
                 <ImageIcon className="w-3 h-3" aria-hidden />
-                看图说话
+                {COPY.featureBadge}
               </span>
               {/* 热区高亮 */}
               <div

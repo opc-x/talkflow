@@ -17,6 +17,7 @@ import { completeLesson } from "@/app/[locale]/protected/learn/[bookNum]/[lesson
 import type { VocabTerm } from "@/components/learn/vocab-list";
 import { speakEnglish } from "@/lib/speech";
 import { MarketScene } from "@/components/scenes/market-scene";
+import { COPY } from "@/lib/copy";
 
 const VocabList = dynamic(
   () => import("@/components/learn/vocab-list").then((mod) => mod.VocabList),
@@ -316,15 +317,15 @@ export function SessionCard({
                 </div>
               )}
               <span className="absolute left-3 top-3 rounded-full bg-primary/90 px-2.5 py-1 text-[10px] font-semibold text-white">
-                看图说话
+                {COPY.featureBadge}
               </span>
               <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-4 pb-3 pt-10">
                 <p className="text-sm font-medium text-white">
-                  {sceneTitle ?? "本课场景"}
+                  {sceneTitle ?? COPY.sceneFallbackTitle}
                 </p>
                 <p className="text-xs text-white/70">
                   {vocabTerms.length > 0
-                    ? `${vocabTerms.length} 个新词 · 先看图再开口`
+                    ? COPY.vocabHint(vocabTerms.length)
                     : segment.vocab.split(" | ").slice(0, 4).join(" · ")}
                 </p>
               </div>
