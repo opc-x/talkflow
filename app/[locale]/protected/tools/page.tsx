@@ -80,6 +80,7 @@ function VocabSearch() {
         .from("terms")
         .select("normalized, book_num, lesson_num, book_page")
         .ilike("normalized", `%${query.trim()}%`)
+        .in("term_kind", ["word", "phrase"])
         .limit(15);
 
       setResults(

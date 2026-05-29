@@ -1,7 +1,10 @@
 import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 
-function loadEnvFile(path: string) {
+/** Keys from .env.local always win over inherited shell env (e.g. wrong OPENAI_API_KEY). */
+const LOCAL_OVERRIDE = /^(OPENAI_|DATABASE_|SUPABASE_|GITHUB_|GH_)/;
+
+function loadEnvFile(path: string, localOverride = false) {
   if (!existsSync(path)) return;
   for (const line of readFileSync(path, "utf8").split("\n")) {
     const trimmed = line.trim();
@@ -10,13 +13,17 @@ function loadEnvFile(path: string) {
     if (eq <= 0) continue;
     const key = trimmed.slice(0, eq).trim();
     const value = trimmed.slice(eq + 1).trim();
-    if (!process.env[key]) process.env[key] = value;
+    if (localOverride && LOCAL_OVERRIDE.test(key)) {
+      process.env[key] = value;
+    } else if (!process.env[key]) {
+      process.env[key] = value;
+    }
   }
 }
 
 export function loadEnv() {
   const root = resolve(import.meta.dirname, "..");
-  loadEnvFile(resolve(root, ".env.local"));
+  loadEnvFile(resolve(root, ".env.local"), true);
   loadEnvFile(resolve(root, ".env"));
 }
 

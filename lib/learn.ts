@@ -1,5 +1,9 @@
 export type BlockType = "lexical_block" | "qa_block" | "grammar_note";
 
+/** term_kind values shown in lesson "新词" / vocab lists */
+export const VOCAB_TERM_KINDS = ["word", "phrase"] as const;
+export type VocabTermKind = (typeof VOCAB_TERM_KINDS)[number];
+
 export interface ContentBlock {
   id: string;
   block_type: BlockType;

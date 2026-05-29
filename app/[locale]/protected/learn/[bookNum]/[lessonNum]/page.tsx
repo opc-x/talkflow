@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { groupIntoSegments } from "@/lib/learn";
+import { groupIntoSegments, VOCAB_TERM_KINDS } from "@/lib/learn";
 import { SessionCard } from "@/components/learn/session-card";
 import { getStageForLesson } from "@/lib/stages";
 import type { VocabTerm } from "@/components/learn/vocab-list";
@@ -76,6 +76,7 @@ export default async function LessonPage({ params }: Props) {
     .select("term, normalized, definition, phonetic")
     .eq("book_num", bookNum)
     .eq("lesson_num", lessonNum)
+    .in("term_kind", [...VOCAB_TERM_KINDS])
     .limit(40);
 
   type TermRow = { term: string; normalized: string; definition: string | null; phonetic: string | null };

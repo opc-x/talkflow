@@ -16,6 +16,10 @@
     "db:scene-prompts": "tsx scripts/generate-scene-prompts.ts",
     "db:embed-lessons": "tsx scripts/embed-lessons.ts",
     "db:grammar-explanations": "tsx scripts/generate-grammar-explanations.ts",
+    "db:align-all": "tsx scripts/align-all-lessons.ts",
+    "db:fix-issue-62": "tsx scripts/fix-issue-62.ts",
+    "db:fix-issue-63": "tsx scripts/fix-issue-63.ts",
+    "db:fix-issue-64": "tsx scripts/fix-issue-64.ts",
     "issue:19:report": "tsx scripts/post-final-report.ts"
   },
   "dependencies": {

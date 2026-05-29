@@ -191,6 +191,7 @@ export async function completeAssessment(
       .from("terms")
       .select("term")
       .eq("lesson_id", lesson.id)
+      .in("term_kind", ["word", "phrase"])
       .order("position", { ascending: true })
       .limit(4)
 
