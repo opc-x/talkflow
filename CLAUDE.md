@@ -24,7 +24,7 @@ npx tsc --noEmit
 # Lint
 npm run lint
 
-# Build
+# Build (backend output: dist/backend/src/index.js)
 npm run build && npm run build:api
 
 # DB scripts (run against Supabase directly)
@@ -32,6 +32,10 @@ npm run db:migrate:scene
 npm run db:audit
 npm run db:embed-lessons
 ```
+
+## Testing
+
+No automated test framework is configured — there are no test scripts and no `*.test.ts` / `*.spec.ts` files. `playwright` is installed as a devDependency but unwired. Verify changes via `npx tsc --noEmit`, `npm run lint`, and manual runs (`npm run dev:all`). Do not assume a `npm test` exists.
 
 ## Architecture: Two Processes
 
@@ -43,7 +47,9 @@ frontend (Next.js)  ──supabase-js──►  Supabase DB  (all non-AI data op
 frontend            ──apiFetch──────► backend :4000  (assessment/audio/checkout/search)
 ```
 
-Frontend calls backend via `lib/api/client.ts` (`apiFetch`). `NEXT_PUBLIC_API_BASE_URL` defaults to `http://localhost:4000/api/v1`. All backend routes require Supabase JWT (`Authorization: Bearer`). The `app/api/` Next.js routes also exist but are separate from the Hono backend.
+Frontend calls backend via `lib/api/client.ts` (`apiFetch`). `NEXT_PUBLIC_API_BASE_URL` defaults to `http://localhost:4000/api/v1`. All backend routes require Supabase JWT (`Authorization: Bearer`); in dev-bypass the token is the literal string `dev-bypass`.
+
+**`app/api/` is NOT the API surface.** The `app/api/{assessment,search,checkout}` directories are empty placeholders — all AI/search/checkout traffic goes to the Hono backend on :4000 via `apiFetch`. The only real Next.js route handlers are `app/api/dev/create-user` and `app/api/dev/seed-progress` (dev tooling).
 
 ## Route Structure
 
@@ -88,7 +94,7 @@ All app routes live under `app/[locale]/` — locale is always `zh` (next-intl, 
 - `qa_responses` — per-answer scores (1–5), accuracy stats
 - `review_schedule` — SRS state per `qa_pair` or `term`: `next_review_at`, `interval_days`, `ease_factor`, `rep_count`
 
-**Known bug**: `completeLesson()` (`app/[locale]/protected/learn/[bookNum]/[lessonNum]/actions.ts`) does NOT write to `review_schedule` after lesson completion — SRS queue is never populated.
+**SRS population**: `completeLesson()` (`app/[locale]/protected/learn/[bookNum]/[lessonNum]/actions.ts`) upserts every `qa_pair` of the finished lesson into `review_schedule` (`next_review_at=today`, `interval_days=1`, `ease_factor=2.5`, `rep_count=0`; `ignoreDuplicates`). It does NOT yet schedule `terms` — only `qa_pair` cards enter the queue.
 
 ## Dev Bypass Mode
 
@@ -103,10 +109,11 @@ DEV_USER_ID=00000000-0000-0000-0000-000000000001
 ## Backend (Hono)
 
 Located in `backend/`. Routes under `/api/v1/` (all require auth middleware):
-- `POST /assessment/evaluate` — Whisper transcription + GPT-4o evaluation
+- `GET  /assessment/questions` — fetch assessment questions from DB
+- `POST /assessment/next-question` — adaptive next question
+- `POST /assessment/evaluate` — Whisper transcription + GPT-4o evaluation (multipart `audio`)
 - `POST /assessment/complete` — compute placement result
-- `GET /assessment/questions` — fetch assessment questions from DB
-- `GET /search` — lesson/content search
+- `POST /search` — lesson/content search
 - `POST /checkout` — Stripe checkout stub (not yet implemented)
 
 ## Path Aliases
@@ -115,3 +122,7 @@ Located in `backend/`. Routes under `/api/v1/` (all require auth middleware):
 @/*       →  ./*          (project root)
 @shared/* →  ./shared/*   (shared frontend+backend code)
 ```
+
+## Output Style (enforced)
+
+`.cursor/rules/000-output-protocol.mdc` (alwaysApply) mandates 图形优先: ASCII tree/表格 → Mermaid → 文字（上限一句话）。GitHub issue/comment 与 `.md` 用 Mermaid；终端/VS Code 回复用表格。

@@ -46,7 +46,7 @@
 
 | 优先级 | 域 | 职责 | 现状 |
 |--------|-----|------|------|
-| P1 | SRS 复习 | 遗忘曲线复习队列，学了不忘 | ⚠️ 坏：`completeLesson()` 不写 `review_schedule`，队列永远空 |
+| P1 | SRS 复习 | 遗忘曲线复习队列，学了不忘 | ✅ 完课写入 `review_schedule`（qa_pair 卡）；⚠️ terms 暂未入队 |
 | P2 | 口语测评/定级 | Onboarding，CEFR 定起点 | ✅ 可用 |
 | P3 | 学习进度 | 当前位置 + 完课记录 | ✅ 基本可用 |
 | P4 | 订阅/支付 | 会员计划 + Stripe | ❌ Stub 未实现 |
@@ -121,6 +121,7 @@ graph TB
     OB -->|评测音频| BE
     LP -->|完课写入| SB
     LP -->|音频评分| BE
+    LP -->|完课填充 review_schedule| SB
     SRS -->|读写 review_schedule| SB
     STATS -->|读 session_records| SB
     AUTH -->|session 管理| SB
@@ -172,7 +173,7 @@ graph TB
     end
 
     AC -->|AssessmentCompleted| PC
-    LC -->|LessonCompleted ⚠️| SR
+    LC -->|LessonCompleted| SR
     SR -->|ReviewAnswered| SR
     ID -->|UserRegistered| PC
     ID -->|UserRegistered| SUB
@@ -180,7 +181,7 @@ graph TB
     CC -->|提供静态内容| LC
 ```
 
-> ⚠️ `LessonCompleted → SRS` 事件未实现：`completeLesson()` 当前不写 `review_schedule`，SRS 队列永远为空。
+> ✅ `LessonCompleted → SRS` 已实现：`completeLesson()` 将该课全部 `qa_pairs` upsert 进 `review_schedule`（SM-2 初值 interval=1 / ease=2.5）。⚠️ `terms` 类型卡片尚未入队。
 
 ---
 
@@ -276,7 +277,7 @@ graph LR
 
     AC["AssessmentCompleted\nCEFRLevel"] -->|设置起点| UP
 
-    LC["LessonCompleted\nlessonId + userId"] -->|⚠️ 未实现| RC["创建 ReviewCards\n为所有 QAPairs"]
+    LC["LessonCompleted\nlessonId + userId"] -->|✅ 已实现| RC["创建 ReviewCards\n为所有 QAPairs"]
 
     RA["ReviewAnswered\nscore 1~5"] -->|SM-2 算法| SS["更新 SRSState\nnext_review_at\nease_factor"]
 ```
