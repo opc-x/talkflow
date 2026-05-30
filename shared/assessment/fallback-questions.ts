@@ -1,6 +1,6 @@
 import type { AssessmentQuestion } from "../types/assessment"
 
-/** API 不可用时的演示题，与 backend assessment.service FALLBACK_QUESTIONS 一致 */
+/** API 不可用时的演示题，与 server assessment.service FALLBACK_QUESTIONS 一致 */
 export const PLACEMENT_FALLBACK_QUESTIONS: AssessmentQuestion[] = [
   {
     roundIndex: 0,

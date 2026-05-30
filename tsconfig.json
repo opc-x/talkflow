@@ -31,5 +31,5 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
   ],
-  "exclude": ["node_modules", "docs/v0/issue-15-output", "backend"]
+  "exclude": ["node_modules", "docs/v0/issue-15-output"]
 }

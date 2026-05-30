@@ -1,0 +1,4 @@
+docs/v0/issue-15-output/
+.playwright-mcp/
+.opc/
+.tmp/

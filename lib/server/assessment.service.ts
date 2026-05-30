@@ -1,15 +1,15 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { getOpenAIClient } from "../lib/openai.js"
+import { getOpenAIClient } from "@/lib/server/openai"
 import {
   buildAssessmentResult,
   nextDifficulty,
-} from "../../../shared/assessment/placement.js"
+} from "@shared/assessment/placement"
 import type {
   AssessmentQuestion,
   AssessmentResult,
   RoundEvaluation,
   RoundScores,
-} from "../../../shared/types/assessment.js"
+} from "@shared/types/assessment"
 
 const FALLBACK_QUESTIONS = [
   {

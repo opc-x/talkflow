@@ -26,7 +26,7 @@
   - Step3: UI 展示 ai_explanation，原文折叠
 
 - [ ] **Stripe 支付**：checkout 路由是 stub，会员计划无法购买
-  - 文件：`backend/src/routes/checkout.ts`
+  - 文件：`app/api/v1/checkout/route.ts` / `lib/server/checkout.service.ts`
 
 ---
 

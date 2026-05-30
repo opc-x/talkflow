@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { embedQuery } from "../lib/openai.js"
-import type { SearchRequest, SearchResponse, SearchResult } from "../../../shared/types/search.js"
+import { embedQuery } from "@/lib/server/openai"
+import type { SearchRequest, SearchResponse, SearchResult } from "@shared/types/search"
 
 async function runVectorSearch(
   supabase: SupabaseClient,

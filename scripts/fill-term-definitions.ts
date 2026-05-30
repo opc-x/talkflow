@@ -1,5 +1,3 @@
-import { readFileSync, existsSync } from "node:fs";
-import { resolve } from "node:path";
 import OpenAI from "openai";
 import { loadEnv, requireEnv } from "./_env.js";
 import { withClient } from "./_db.js";
@@ -7,26 +5,7 @@ import { withClient } from "./_db.js";
 const BATCH_SIZE = 50;
 const MODEL = process.env.OPENAI_FILL_MODEL ?? "gpt-4o-mini";
 
-function loadBackendEnv() {
-  const path = resolve(import.meta.dirname, "../backend/.env");
-  if (!existsSync(path)) return;
-  for (const line of readFileSync(path, "utf8").split("\n")) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) continue;
-    const eq = trimmed.indexOf("=");
-    if (eq <= 0) continue;
-    const key = trimmed.slice(0, eq).trim();
-    const value = trimmed.slice(eq + 1).trim();
-    if (key === "OPENAI_API_KEY" || key === "OPENAI_BASE_URL") {
-      process.env[key] = value;
-    } else if (!process.env[key]) {
-      process.env[key] = value;
-    }
-  }
-}
-
 loadEnv();
-loadBackendEnv();
 
 interface TermRow {
   id: number;

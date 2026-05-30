@@ -84,8 +84,9 @@ graph TB
     User(["👤 学习者"])
 
     subgraph TF["TalkFlow"]
-        FE["Next.js Frontend :3000\nApp Router + Supabase 直连\n课程 / 复习 / 评测 / 统计"]
-        BE["Hono API Backend :4000\nAI 密集型操作\n音频评测 + 定位"]
+        FE["Next.js App\nApp Router + API Routes\n课程 / 复习 / 评测 / 统计"]
+        API["/api/v1 Route Handlers\n薄 API 层\n鉴权 + 参数校验 + service 调用"]
+        SVC["Server Services\nAI / 搜索 / Checkout 业务逻辑"]
     end
 
     SB[("Supabase\nPostgreSQL + Auth + RLS")]
@@ -94,10 +95,11 @@ graph TB
 
     User -->|HTTPS| FE
     FE -->|supabase-js 直连| SB
-    FE -->|fetch /api/v1 + JWT| BE
-    BE -->|JWT 验证| SB
-    BE -->|音频 + 评测| OAI
-    BE -->|checkout| STR
+    FE -->|fetch /api/v1 + JWT| API
+    API -->|调用| SVC
+    SVC -->|JWT 验证 / 数据读写| SB
+    SVC -->|音频 + 评测| OAI
+    SVC -->|checkout| STR
 ```
 
 ---
@@ -116,11 +118,11 @@ graph TB
     end
 
     SB[("Supabase DB")]
-    BE["Hono API :4000"]
+    API["Next.js /api/v1"]
 
-    OB -->|评测音频| BE
+    OB -->|评测音频| API
     LP -->|完课写入| SB
-    LP -->|音频评分| BE
+    LP -->|音频评分| API
     LP -->|完课填充 review_schedule| SB
     SRS -->|读写 review_schedule| SB
     STATS -->|读 session_records| SB
@@ -129,23 +131,27 @@ graph TB
 
 ---
 
-## C4 L3 — 组件：Backend
+## C4 L3 — 组件：API / Server
 
 ```mermaid
 graph TB
-    subgraph BE["Hono API Backend"]
-        AM["Auth Middleware\nJWT 验证 + userId 注入"]
+    subgraph API["Next.js /api/v1"]
+        RH["Route Handlers\n参数校验 + JSON 响应"]
+        AM["API Auth Context\nJWT 验证 + userId 注入"]
+        SS["Server Services\n业务逻辑"]
         AE["Assessment Evaluator\nWhisper 转写 + GPT-4o 评分"]
         AP["Placement Scorer\n多轮评测 → CEFR 定级"]
         CK["Checkout\nStripe stub（未完成）"]
     end
 
-    FE["Next.js Frontend"]
+    FE["Client Components"]
     OAI["OpenAI API"]
     SB[("Supabase DB")]
 
-    FE -->|Bearer JWT| AM
-    AM --> AE & AP & CK
+    FE -->|Bearer JWT| RH
+    RH --> AM
+    AM --> SS
+    SS --> AE & AP & CK
     AE -->|Whisper + GPT-4o| OAI
     AP -->|写入定级结果| SB
 ```
@@ -289,8 +295,7 @@ graph LR
 ```bash
 cp .env.example .env.local   # 填入 Supabase / OpenAI key
 npm install
-cd backend && npm install && cd ..
-npm run dev:all               # 前端 :3000 + 后端 :4000
+npm run dev                   # Next.js 页面 + /api/v1
 ```
 
 ## 文档

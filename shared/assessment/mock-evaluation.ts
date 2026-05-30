@@ -13,7 +13,7 @@ export function mockRoundEvaluation(
     suggestion: referenceAnswer,
     feedback:
       reason ??
-      "演示反馈：另开终端运行 npm run dev:api 并配置 OPENAI_API_KEY 后，会换成真实语音识别。",
+      "演示反馈：配置 OPENAI_API_KEY 后，会换成真实语音识别。",
     scores: { fluency: 6, grammar: 6, vocabulary: 6 },
   }
 }

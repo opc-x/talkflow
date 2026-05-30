@@ -9,14 +9,8 @@ TalkFlow is an AI-powered English speaking practice app. Core loop: **lesson →
 ## Commands
 
 ```bash
-# Frontend (Next.js, port 3000)
+# Next.js app (pages + API routes, port 3000)
 npm run dev
-
-# Backend (Hono API, port 4000) — required for assessment + audio evaluation
-npm run dev:api
-
-# Both together
-npm run dev:all
 
 # Type check
 npx tsc --noEmit
@@ -24,8 +18,8 @@ npx tsc --noEmit
 # Lint
 npm run lint
 
-# Build (backend output: dist/backend/src/index.js)
-npm run build && npm run build:api
+# Build
+npm run build
 
 # DB scripts (run against Supabase directly)
 npm run db:migrate:scene
@@ -35,21 +29,21 @@ npm run db:embed-lessons
 
 ## Testing
 
-No automated test framework is configured — there are no test scripts and no `*.test.ts` / `*.spec.ts` files. `playwright` is installed as a devDependency but unwired. Verify changes via `npx tsc --noEmit`, `npm run lint`, and manual runs (`npm run dev:all`). Do not assume a `npm test` exists.
+No automated test framework is configured — there are no test scripts and no `*.test.ts` / `*.spec.ts` files. `playwright` is installed as a devDependency but unwired. Verify changes via `npx tsc --noEmit`, `npm run lint`, and manual runs (`npm run dev`). Do not assume a `npm test` exists.
 
-## Architecture: Two Processes
+## Architecture: One Vercel App
 
-**Frontend** — Next.js 15 App Router + Supabase (direct)
-**Backend** — Hono API (`backend/`) + OpenAI — only for AI-heavy operations
+**App** — Next.js App Router + Supabase + API routes
 
 ```
 frontend (Next.js)  ──supabase-js──►  Supabase DB  (all non-AI data ops)
-frontend            ──apiFetch──────► backend :4000  (assessment/audio/checkout/search)
+frontend            ──apiFetch──────► /api/v1       (assessment/audio/checkout/search)
+/api/v1 routes      ──service layer──► Supabase / OpenAI / Stripe
 ```
 
-Frontend calls backend via `lib/api/client.ts` (`apiFetch`). `NEXT_PUBLIC_API_BASE_URL` defaults to `http://localhost:4000/api/v1`. All backend routes require Supabase JWT (`Authorization: Bearer`); in dev-bypass the token is the literal string `dev-bypass`.
+Frontend calls API routes via `lib/api/client.ts` (`apiFetch`). `NEXT_PUBLIC_API_BASE_URL` defaults to same-origin `/api/v1`, so local dev and Vercel deploys use the same path. API routes require Supabase JWT (`Authorization: Bearer`); in dev-bypass the token is the literal string `dev-bypass`.
 
-**`app/api/` is NOT the API surface.** The `app/api/{assessment,search,checkout}` directories are empty placeholders — all AI/search/checkout traffic goes to the Hono backend on :4000 via `apiFetch`. The only real Next.js route handlers are `app/api/dev/create-user` and `app/api/dev/seed-progress` (dev tooling).
+`app/api/v1/*` is the API surface. Route handlers should stay thin: validate input, authenticate with `lib/server/api-auth.ts`, call `lib/server/*.service.ts`, and return JSON.
 
 ## Route Structure
 
@@ -58,7 +52,7 @@ All app routes live under `app/[locale]/` — locale is always `zh` (next-intl, 
 | Route | Purpose |
 |-------|---------|
 | `/` | Landing page |
-| `/onboarding` | Speak-First placement assessment (calls backend) |
+| `/onboarding` | Speak-First placement assessment (calls `/api/v1`) |
 | `/protected` | Dashboard |
 | `/protected/learn/[bookNum]/[lessonNum]` | Lesson player |
 | `/protected/review` | Daily SRS review |
@@ -73,9 +67,9 @@ All app routes live under `app/[locale]/` — locale is always `zh` (next-intl, 
 
 **Supabase client**: Always use `lib/supabase/server.ts` in Server Components/Actions, `lib/supabase/client.ts` in Client Components. Dev bypass: `DEV_BYPASS_AUTH=true` injects a fake user and uses admin client (bypasses RLS).
 
-**Server Actions**: All data mutations in `protected/` use Server Actions (`"use server"`) with direct supabase-js. No API routes for CRUD — only Hono handles AI/audio.
+**Server Actions**: Data mutations in `protected/` use Server Actions (`"use server"`) with direct supabase-js. API routes are reserved for client-triggered AI/audio/search/checkout flows.
 
-**Shared code**: `shared/` contains types and logic shared by frontend + backend. Import via `@shared/*` alias on backend, re-exported from `lib/` on frontend (e.g. `lib/stages.ts` re-exports `shared/stages.ts`).
+**Shared code**: `shared/` contains types and logic shared by client-facing code and server services. Import via `@shared/*`, or re-export from `lib/` where needed (e.g. `lib/stages.ts` re-exports `shared/stages.ts`).
 
 **Subscription/Plan system**: Three tiers — `free` / `basic` / `pro`. Stages 1 (lessons 1–24) are free; stages 2–3 require `basic`; stage 4 requires `pro`. Gate access via `isStageLocked()` from `lib/subscription.ts`. Plan aliases: `daily` → `basic`, `full` → `pro` (handled in `normalizePlan`).
 
@@ -100,27 +94,28 @@ All app routes live under `app/[locale]/` — locale is always `zh` (next-intl, 
 
 Set in `.env.local`:
 ```
-DEV_BYPASS_AUTH=true                       # backend: skip JWT, use DEV_USER_ID
+DEV_BYPASS_AUTH=true                       # API routes: skip JWT, use DEV_USER_ID
 NEXT_PUBLIC_DEV_BYPASS_AUTH=true           # frontend: fake Supabase session
 NEXT_PUBLIC_DEV_TOOLS=true                 # show dev shortcuts in UI
 DEV_USER_ID=00000000-0000-0000-0000-000000000001
 ```
 
-## Backend (Hono)
+## API Routes
 
-Located in `backend/`. Routes under `/api/v1/` (all require auth middleware):
+Located in `app/api/v1/`. Routes under `/api/v1/` (all require auth except health):
 - `GET  /assessment/questions` — fetch assessment questions from DB
 - `POST /assessment/next-question` — adaptive next question
 - `POST /assessment/evaluate` — Whisper transcription + GPT-4o evaluation (multipart `audio`)
 - `POST /assessment/complete` — compute placement result
 - `POST /search` — lesson/content search
 - `POST /checkout` — Stripe checkout stub (not yet implemented)
+- `GET  /health` — service health check
 
 ## Path Aliases
 
 ```
 @/*       →  ./*          (project root)
-@shared/* →  ./shared/*   (shared frontend+backend code)
+@shared/* →  ./shared/*   (shared client/server code)
 ```
 
 ## Output Style (enforced)

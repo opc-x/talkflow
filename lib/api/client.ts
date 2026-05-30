@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/client"
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api/v1"
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api/v1"
 
 export class ApiError extends Error {
   status: number
@@ -60,13 +60,13 @@ export async function apiFetch<T>(
   } catch (err) {
     if (err instanceof Error && err.name === "AbortError") {
       throw new ApiError(
-        `口语服务超时（${timeoutMs / 1000}s）。请确认已运行 npm run dev:api`,
+        `口语服务超时（${timeoutMs / 1000}s）。请稍后重试`,
         408
       )
     }
     if (err instanceof TypeError && err.message === "Failed to fetch") {
       throw new ApiError(
-        "AI 测评服务未连接，请先运行 npm run dev:api（端口 4000）",
+        "AI 测评服务暂时不可用，请稍后重试",
         503
       )
     }

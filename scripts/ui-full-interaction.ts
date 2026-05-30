@@ -3,8 +3,7 @@
  *
  * 前提：
  *   - DEV_BYPASS_AUTH=true (已设，所有保护路由直接进)
- *   - npm run dev 已运行（:3000）
- *   - npm run dev:api 已运行（:4000，onboarding 需要）
+ *   - npm run dev 已运行（页面和 /api/v1）
  *
  * Usage:
  *   npx tsx scripts/ui-full-interaction.ts

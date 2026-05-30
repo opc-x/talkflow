@@ -1,11 +1,15 @@
 import OpenAI from "openai"
-import { config } from "../env.js"
+import { serverConfig } from "@/lib/server/config"
 
 let client: OpenAI | null = null
 
+export function hasOpenAIKey() {
+  return Boolean(serverConfig.openaiApiKey())
+}
+
 export function getOpenAIClient(): OpenAI {
   if (!client) {
-    const apiKey = config.openaiApiKey()
+    const apiKey = serverConfig.openaiApiKey()
     if (!apiKey) throw new Error("OPENAI_API_KEY is not set")
     client = new OpenAI({ apiKey })
   }
