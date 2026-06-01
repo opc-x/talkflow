@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useTransition, useMemo, Component, type ReactNode } from "react";
+import { useState, useTransition, useMemo, useRef, useEffect, Component, type ReactNode } from "react";
 import dynamic from "next/dynamic";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   ChevronLeft,
@@ -16,7 +16,27 @@ import type { Segment } from "@/lib/learn";
 import { completeLesson } from "@/app/[locale]/protected/learn/[bookNum]/[lessonNum]/actions";
 import type { VocabTerm } from "@/components/learn/vocab-list";
 import { speakEnglish } from "@/lib/speech";
-import { MarketScene } from "@/components/scenes/market-scene";
+import { playUtterance } from "@/lib/audio";
+import {
+  beginLocalListening,
+  beginAiRecording,
+  runPracticeFromListenHandle,
+  runPracticeFromAiRecording,
+  isAiPracticeEnabled,
+  SpeechRecognitionError,
+} from "@/lib/practice-evaluate-client";
+import type { PracticeEvalMode } from "@/lib/practice-evaluate-client";
+import type { ListeningHandle } from "@/lib/local-practice";
+import type { AiRecordingHandle } from "@/lib/practice-evaluate-client";
+import type { RoundEvaluation } from "@shared/types/assessment";
+import { MicRecordButton } from "@/components/speak/mic-record-button";
+import { EvaluationFeedback } from "@/components/speak/evaluation-feedback";
+import { QaScene } from "@/components/scenes/qa-scene";
+import { scoringReference, inferVisualState } from "@/lib/parse-qa-visual";
+import {
+  buildLearnViewQuery,
+  type LearnViewPhase,
+} from "@/lib/learn-url-state";
 import { COPY } from "@/lib/copy";
 
 const VocabList = dynamic(
@@ -60,7 +80,7 @@ class VocabListErrorBoundary extends Component<
   }
 }
 
-type Phase = "vocab" | "question" | "answer";
+type Phase = "vocab" | "question" | "feedback" | "answer";
 
 interface Props {
   segments: Segment[];
@@ -72,6 +92,14 @@ interface Props {
   sceneTitle?: string | null;
   vocabTerms: VocabTerm[];
   totalSentences: number;
+  /** Dev preview: skip vocab intro and land on first Q&A */
+  initialPhase?: Phase;
+  /** From URL ?phase=&seg=&pair= — shareable view for @Browser / visual peek */
+  initialLearnView?: {
+    phase?: LearnViewPhase;
+    segIdx?: number;
+    pairIdx?: number;
+  };
 }
 
 function countGrammarNotes(segments: Segment[]) {
@@ -79,6 +107,23 @@ function countGrammarNotes(segments: Segment[]) {
     (n, seg) => n + seg.pairs.filter((p) => p.question === "").length,
     0
   );
+}
+
+function clampLearnView(
+  segments: Segment[],
+  view?: Props["initialLearnView"],
+): { phase?: LearnViewPhase; segIdx: number; pairIdx: number } {
+  if (!segments.length) return { segIdx: 0, pairIdx: 0 };
+  const segIdx = Math.min(
+    Math.max(view?.segIdx ?? 0, 0),
+    segments.length - 1,
+  );
+  const pairCount = segments[segIdx]?.pairs.length ?? 0;
+  const pairIdx = Math.min(
+    Math.max(view?.pairIdx ?? 0, 0),
+    Math.max(pairCount - 1, 0),
+  );
+  return { phase: view?.phase, segIdx, pairIdx };
 }
 
 export function SessionCard({
@@ -91,20 +136,51 @@ export function SessionCard({
   sceneTitle,
   vocabTerms,
   totalSentences,
+  initialPhase,
+  initialLearnView,
 }: Props) {
   const router = useRouter();
+  const pathname = usePathname();
   const params = useParams();
   const locale = (params.locale as string) ?? "zh";
   const homeHref = `/${locale}/protected`;
 
-  const [segIdx, setSegIdx] = useState(0);
-  const [phase, setPhase] = useState<Phase>("vocab");
-  const [pairIdx, setPairIdx] = useState(0);
+  const viewSeed = useMemo(
+    () => clampLearnView(segments, initialLearnView),
+    [segments, initialLearnView],
+  );
+
+  const [segIdx, setSegIdx] = useState(viewSeed.segIdx);
+  const [phase, setPhase] = useState<Phase>(
+    initialPhase ?? viewSeed.phase ?? "vocab",
+  );
+  const [pairIdx, setPairIdx] = useState(viewSeed.pairIdx);
   const [done, setDone] = useState(false);
   const [nextHref, setNextHref] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [thumbFailed, setThumbFailed] = useState(false);
+  const [currentEval, setCurrentEval] = useState<RoundEvaluation | null>(null);
+  const [evalMode, setEvalMode] = useState<PracticeEvalMode>("local");
+  const [evalNote, setEvalNote] = useState<string | null>(null);
+  const [listening, setListening] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const listenRef = useRef<ListeningHandle | null>(null);
+  const recordRef = useRef<AiRecordingHandle | null>(null);
+  const micActiveRef = useRef(false);
   const [, startTransition] = useTransition();
+
+  useEffect(() => {
+    void navigator.mediaDevices
+      ?.getUserMedia({ audio: true })
+      .then((stream) => stream.getTracks().forEach((t) => t.stop()))
+      .catch(() => {});
+  }, []);
+
+  /** Keep URL in sync so copying the address bar = Agent @Browser sees the same step */
+  useEffect(() => {
+    if (done) return;
+    const q = buildLearnViewQuery(phase, segIdx, pairIdx);
+    router.replace(`${pathname}?${q}`, { scroll: false });
+  }, [phase, segIdx, pairIdx, pathname, router, done]);
 
   const grammarCount = useMemo(() => countGrammarNotes(segments), [segments]);
 
@@ -161,6 +237,16 @@ export function SessionCard({
       .filter((p) => p.question !== "").length +
     (phase !== "vocab" && !isGrammarNote ? 1 : 0);
 
+  function resetSpeakState() {
+    micActiveRef.current = false;
+    listenRef.current?.abort();
+    recordRef.current = null;
+    setCurrentEval(null);
+    setEvalNote(null);
+    setActionError(null);
+    setListening(false);
+  }
+
   function finishLesson() {
     setDone(true);
     if (lessonId) {
@@ -182,6 +268,7 @@ export function SessionCard({
   }
 
   function nextPairOrSegment() {
+    resetSpeakState();
     if (pairIdx < segment.pairs.length - 1) {
       const next = segment.pairs[pairIdx + 1];
       setPairIdx((p) => p + 1);
@@ -204,6 +291,7 @@ export function SessionCard({
   }
 
   function startSegment() {
+    resetSpeakState();
     if (segment.pairs.length === 0) {
       let nextIdx = segIdx + 1;
       while (nextIdx < segments.length && segments[nextIdx].pairs.length === 0) {
@@ -229,13 +317,79 @@ export function SessionCard({
     window.location.href = homeHref;
   }
 
+  function onMicPressStart() {
+    if (!pair || micActiveRef.current || pair.question === "") return;
+    micActiveRef.current = true;
+    setActionError(null);
+    setEvalNote(null);
+    setListening(true);
+    if (isAiPracticeEnabled()) {
+      recordRef.current = beginAiRecording(12000);
+    } else {
+      listenRef.current = beginLocalListening(12000);
+    }
+  }
+
+  function onMicPressEnd() {
+    if (!micActiveRef.current || !pair) return;
+
+    void (async () => {
+      const input = {
+        question: pair.question,
+        referenceAnswer: pair.answer,
+        scoringAnswer: scoringReference(
+          pair.question,
+          pair.answer,
+          pair.visualState ?? inferVisualState(pair.question, pair.answer)
+        ),
+        roundIndex: pairIdx,
+        qaPairId: pair.qaPairId,
+      };
+
+      try {
+        let result;
+        if (isAiPracticeEnabled()) {
+          const rec = recordRef.current;
+          if (!rec) throw new Error("录音未启动");
+          result = await runPracticeFromAiRecording(input, rec);
+        } else {
+          const handle = listenRef.current;
+          if (!handle) throw new SpeechRecognitionError("语音识别未启动");
+          handle.stop();
+          result = await runPracticeFromListenHandle(input, handle);
+        }
+        setCurrentEval(result.evaluation);
+        setEvalMode(result.mode);
+        setEvalNote(result.fallbackNote ?? null);
+        setPhase("feedback");
+      } catch (err) {
+        listenRef.current?.abort();
+        if (err instanceof SpeechRecognitionError) {
+          setActionError(err.message);
+        } else {
+          setActionError(err instanceof Error ? err.message : "录音或评估失败");
+        }
+      } finally {
+        micActiveRef.current = false;
+        setListening(false);
+        listenRef.current = null;
+        recordRef.current = null;
+      }
+    })();
+  }
+
   function goBack() {
     if (phase === "vocab" && segIdx === 0) {
       exitToHome();
       return;
     }
+    if (phase === "feedback") {
+      setPhase("question");
+      setCurrentEval(null);
+      return;
+    }
     if (phase === "answer") {
-      setPhase(isGrammarNote ? "vocab" : "question");
+      setPhase(currentEval ? "feedback" : isGrammarNote ? "vocab" : "question");
       return;
     }
     if (phase === "question") {
@@ -304,22 +458,23 @@ export function SessionCard({
         </div>
       </header>
 
-      <main className="flex-1 flex flex-col max-w-2xl mx-auto w-full px-4 py-4 pb-6">
+      <main
+        className="flex-1 flex flex-col max-w-2xl mx-auto w-full px-4 py-4 pb-6"
+        data-learn-phase={phase}
+      >
         {phase === "vocab" && (
           <>
-            <div className="relative mb-4 aspect-[4/3] w-full shrink-0 overflow-hidden rounded-2xl border border-border bg-muted">
-              {sceneImageUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={sceneImageUrl} alt="" className="h-full w-full object-cover" />
-              ) : (
-                <div className="h-full w-full [&_svg]:h-full [&_svg]:w-full">
-                  <MarketScene />
-                </div>
-              )}
-              <span className="absolute left-3 top-3 rounded-full bg-primary/90 px-2.5 py-1 text-[10px] font-semibold text-white">
-                {COPY.featureBadge}
-              </span>
-              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-4 pb-3 pt-10">
+            <div
+              className="relative mb-4 aspect-[4/3] w-full shrink-0 overflow-hidden rounded-2xl border border-border bg-[#FFF9F3]"
+              data-testid="learn-vocab-scene"
+            >
+              <QaScene
+                question="What's this?"
+                answer="It's a pen"
+                variant="hero"
+                className="absolute inset-0 h-full rounded-none border-0 shadow-none"
+              />
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-4 pb-3 pt-10">
                 <p className="text-sm font-medium text-white">
                   {sceneTitle ?? COPY.sceneFallbackTitle}
                 </p>
@@ -359,22 +514,24 @@ export function SessionCard({
 
         {phase !== "vocab" && pair && (
           <>
-            {sceneImageUrl && !thumbFailed && (
-              <div className="mb-4 flex justify-end">
-                <div className="h-14 w-20 overflow-hidden rounded-lg border border-border">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={sceneImageUrl}
-                    alt=""
-                    className="h-full w-full object-cover"
-                    onError={() => setThumbFailed(true)}
-                  />
-                </div>
+            {!isGrammarNote ? (
+              <QaScene
+                key={`${segIdx}-${pairIdx}-${pair.question}`}
+                question={pair.question}
+                answer={pair.answer}
+                variant="hero"
+                interactive
+                className="mb-4"
+              />
+            ) : (
+              <div className="relative mb-4 aspect-[4/3] max-h-[28vh] w-full shrink-0 overflow-hidden rounded-2xl border border-border bg-muted flex items-center justify-center">
+                <p className="text-sm text-muted-foreground px-6 text-center">语法要点</p>
               </div>
             )}
 
             {!isGrammarNote && (
-              <div className="flex-1 flex flex-col justify-center">
+              <div className="flex flex-col justify-center mb-4">
+                <p className="text-sm text-muted-foreground mb-2">AI 问你</p>
                 <p className="text-2xl md:text-3xl font-medium text-foreground leading-relaxed text-balance">
                   {pair.question}
                 </p>
@@ -382,23 +539,43 @@ export function SessionCard({
             )}
 
             {phase === "question" && !isGrammarNote && (
-              <div className="mt-8 flex flex-col gap-3">
+              <div className="mt-8 flex flex-col gap-4">
+                {actionError && (
+                  <p className="text-sm text-destructive text-center">{actionError}</p>
+                )}
                 <Button
                   variant="outline"
                   size="lg"
                   className="rounded-2xl h-12"
-                  onClick={() => speakEnglish(pair.question)}
+                  onClick={() => playUtterance(pair.question, pair.audioUrl)}
                 >
                   <Volume2 className="w-4 h-4 mr-2" />
                   听问题
                 </Button>
-                <Button
-                  size="lg"
-                  className="rounded-2xl h-14"
-                  onClick={() => setPhase("answer")}
-                >
-                  看答案
-                </Button>
+                <MicRecordButton
+                  busy={listening}
+                  onPressStart={onMicPressStart}
+                  onPressEnd={onMicPressEnd}
+                />
+              </div>
+            )}
+
+            {phase === "feedback" && currentEval && !isGrammarNote && (
+              <div className="mt-6 flex flex-col flex-1">
+                {actionError && (
+                  <p className="text-sm text-destructive text-center mb-3">{actionError}</p>
+                )}
+                <EvaluationFeedback
+                  evaluation={currentEval}
+                  mode={evalMode}
+                  modeNote={evalNote}
+                  onRetry={() => {
+                    setCurrentEval(null);
+                    setEvalNote(null);
+                    setPhase("question");
+                  }}
+                  onContinue={() => setPhase("answer")}
+                />
               </div>
             )}
 
@@ -410,6 +587,15 @@ export function SessionCard({
                     <p className="text-xl md:text-2xl text-foreground/90 leading-relaxed whitespace-pre-wrap">
                       {pair.answer}
                     </p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="mt-3 self-start rounded-xl"
+                      onClick={() => speakEnglish(pair.answer, 0.8)}
+                    >
+                      <Volume2 className="w-4 h-4 mr-2" />
+                      听参考答案
+                    </Button>
                   </>
                 )}
                 {isGrammarNote && (
@@ -437,7 +623,10 @@ export function SessionCard({
                     variant="outline"
                     size="lg"
                     className="flex-1 rounded-2xl h-14"
-                    onClick={() => setPhase(isGrammarNote ? "vocab" : "question")}
+                    onClick={() => {
+                      resetSpeakState();
+                      setPhase(isGrammarNote ? "vocab" : "question");
+                    }}
                   >
                     <RotateCcw className="w-4 h-4 mr-2" />
                     再来

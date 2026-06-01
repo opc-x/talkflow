@@ -90,6 +90,12 @@ All app routes live under `app/[locale]/` — locale is always `zh` (next-intl, 
 
 **SRS population**: `completeLesson()` (`app/[locale]/protected/learn/[bookNum]/[lessonNum]/actions.ts`) upserts every `qa_pair` of the finished lesson into `review_schedule` (`next_review_at=today`, `interval_days=1`, `ease_factor=2.5`, `rep_count=0`; `ignoreDuplicates`). It does NOT yet schedule `terms` — only `qa_pair` cards enter the queue.
 
+## Configuration
+
+All env vars, local vs Vercel setup, and script-only keys: **`docs/CONFIG.md`**. Template: `.env.local` from `.env.example`.
+
+**成本评估（API / TTS / hosting 粗算）：** **`docs/COST.md`**
+
 ## Dev Bypass Mode
 
 Set in `.env.local`:
@@ -106,6 +112,7 @@ Located in `app/api/v1/`. Routes under `/api/v1/` (all require auth except healt
 - `GET  /assessment/questions` — fetch assessment questions from DB
 - `POST /assessment/next-question` — adaptive next question
 - `POST /assessment/evaluate` — Whisper transcription + GPT-4o evaluation (multipart `audio`)
+- `POST /practice/evaluate` — lesson/review speaking practice + optional `qa_responses` save
 - `POST /assessment/complete` — compute placement result
 - `POST /search` — lesson/content search
 - `POST /checkout` — Stripe checkout stub (not yet implemented)

@@ -11,7 +11,11 @@ export function getOpenAIClient(): OpenAI {
   if (!client) {
     const apiKey = serverConfig.openaiApiKey()
     if (!apiKey) throw new Error("OPENAI_API_KEY is not set")
-    client = new OpenAI({ apiKey })
+    const baseURL = process.env.OPENAI_BASE_URL?.trim()
+    client = new OpenAI({
+      apiKey,
+      ...(baseURL ? { baseURL } : {}),
+    })
   }
   return client
 }

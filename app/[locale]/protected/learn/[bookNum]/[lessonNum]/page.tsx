@@ -1,13 +1,15 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { groupIntoSegments, VOCAB_TERM_KINDS, compareBlockIds } from "@/lib/learn";
+import { groupIntoSegments, VOCAB_TERM_KINDS, compareBlockIds, enrichSegmentsWithQaPairs } from "@/lib/learn";
 import { SessionCard } from "@/components/learn/session-card";
 import { getStageForLesson } from "@/lib/stages";
 import type { VocabTerm } from "@/components/learn/vocab-list";
 import { normalizeDisplayText } from "@/lib/normalize-display-text";
+import { parseLearnViewState } from "@/lib/learn-url-state";
 
 interface Props {
   params: Promise<{ locale: string; bookNum: string; lessonNum: string }>;
+  searchParams: Promise<{ phase?: string; seg?: string; pair?: string }>;
 }
 
 function countSentences(segments: ReturnType<typeof groupIntoSegments>) {
@@ -17,8 +19,14 @@ function countSentences(segments: ReturnType<typeof groupIntoSegments>) {
   );
 }
 
-export default async function LessonPage({ params }: Props) {
+export default async function LessonPage({ params, searchParams }: Props) {
   const { locale, bookNum: bookNumStr, lessonNum: lessonNumStr } = await params;
+  const sp = await searchParams;
+  const learnView = parseLearnViewState(
+    new URLSearchParams(
+      Object.entries(sp).filter(([, v]) => v != null) as [string, string][],
+    ),
+  );
   const bookNum = parseInt(bookNumStr);
   const lessonNum = parseInt(lessonNumStr);
 
@@ -52,7 +60,20 @@ export default async function LessonPage({ params }: Props) {
     redirect(`/${locale}/protected/learn/1/1`);
   }
 
-  const segments = groupIntoSegments(blocks);
+  const segmentsRaw = groupIntoSegments(blocks);
+  let segments = segmentsRaw;
+
+  if (lesson?.id) {
+    const { data: qaRows } = await supabase
+      .from("qa_pairs")
+      .select("id, question, answer, audio_url, visual_state")
+      .eq("lesson_id", lesson.id);
+
+    if (qaRows?.length) {
+      segments = enrichSegmentsWithQaPairs(segmentsRaw, qaRows);
+    }
+  }
+
   const totalSentences = countSentences(segments);
   const stage = getStageForLesson(lessonNum);
   const stageLabel = `${stage.emoji} ${stage.name}`;
@@ -112,6 +133,7 @@ export default async function LessonPage({ params }: Props) {
       sceneTitle={sceneTitle}
       vocabTerms={vocabTerms}
       totalSentences={Math.max(totalSentences, 1)}
+      initialLearnView={learnView}
     />
   );
 }

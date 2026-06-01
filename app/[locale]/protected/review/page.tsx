@@ -30,6 +30,7 @@ export default async function ReviewPage() {
 
   interface ReviewItem {
     id: number;
+    qaPairId: number;
     question: string;
     answer: string;
     book_num: number;
@@ -64,6 +65,7 @@ export default async function ReviewPage() {
     const stage = getStageForLesson(qa.lesson_num);
     items.push({
       id: row.id as number,
+      qaPairId: qa.id,
       question: body.slice(0, aIdx).trim(),
       answer: body.slice(aIdx + 4).trim(),
       book_num: qa.book_num,

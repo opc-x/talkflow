@@ -1,16 +1,32 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Trophy } from "lucide-react";
+import { Trophy, Volume2 } from "lucide-react";
 import Link from "next/link";
 import { rateReview } from "./actions";
+import {
+  beginLocalListening,
+  beginAiRecording,
+  runPracticeFromListenHandle,
+  runPracticeFromAiRecording,
+  isAiPracticeEnabled,
+  SpeechRecognitionError,
+} from "@/lib/practice-evaluate-client";
+import type { ListeningHandle } from "@/lib/local-practice";
+import type { AiRecordingHandle } from "@/lib/practice-evaluate-client";
+import type { PracticeEvalMode } from "@/lib/practice-evaluate-client";
+import type { RoundEvaluation } from "@shared/types/assessment";
+import { MicRecordButton } from "@/components/speak/mic-record-button";
+import { EvaluationFeedback } from "@/components/speak/evaluation-feedback";
+import { speakEnglish } from "@/lib/speech";
 
 interface ReviewItem {
   id: number;
+  qaPairId: number;
   question: string;
   answer: string;
   book_num: number;
@@ -29,15 +45,44 @@ const RATINGS = [
   { label: "脱口而出", score: 5, cls: "bg-primary text-primary-foreground hover:bg-primary/90 border-primary" },
 ] as const;
 
+type ReviewPhase = "speak" | "feedback" | "rate";
+
 export function ReviewClient({ items }: { items: ReviewItem[] }) {
   const params = useParams();
   const locale = (params.locale as string) ?? "zh";
   const [idx, setIdx] = useState(0);
-  const [revealed, setRevealed] = useState(false);
+  const [phase, setPhase] = useState<ReviewPhase>("speak");
+  const [currentEval, setCurrentEval] = useState<RoundEvaluation | null>(null);
+  const [evalMode, setEvalMode] = useState<PracticeEvalMode>("local");
+  const [evalNote, setEvalNote] = useState<string | null>(null);
+  const [listening, setListening] = useState(false);
+  const listenRef = useRef<ListeningHandle | null>(null);
+  const recordRef = useRef<AiRecordingHandle | null>(null);
+  const micActiveRef = useRef(false);
   const [correct, setCorrect] = useState(0);
   const [rateError, setRateError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const total = items.length;
+
+  useEffect(() => {
+    void navigator.mediaDevices
+      ?.getUserMedia({ audio: true })
+      .then((stream) => stream.getTracks().forEach((t) => t.stop()))
+      .catch(() => {});
+  }, []);
+
+  function resetCard() {
+    micActiveRef.current = false;
+    listenRef.current?.abort();
+    recordRef.current = null;
+    setPhase("speak");
+    setCurrentEval(null);
+    setEvalMode("local");
+    setEvalNote(null);
+    setActionError(null);
+    setListening(false);
+  }
 
   if (total === 0 || idx >= total) {
     const rate = total > 0 ? Math.round((correct / total) * 100) : 0;
@@ -72,6 +117,62 @@ export function ReviewClient({ items }: { items: ReviewItem[] }) {
   const item = items[idx];
   const doneCount = idx;
 
+  function onMicPressStart() {
+    if (micActiveRef.current) return;
+    micActiveRef.current = true;
+    setActionError(null);
+    setEvalNote(null);
+    setListening(true);
+    if (isAiPracticeEnabled()) {
+      recordRef.current = beginAiRecording(12000);
+    } else {
+      listenRef.current = beginLocalListening(12000);
+    }
+  }
+
+  function onMicPressEnd() {
+    if (!micActiveRef.current) return;
+
+    void (async () => {
+      const input = {
+        question: item.question,
+        referenceAnswer: item.answer,
+        roundIndex: idx,
+        qaPairId: item.qaPairId,
+      };
+
+      try {
+        let result;
+        if (isAiPracticeEnabled()) {
+          const rec = recordRef.current;
+          if (!rec) throw new Error("录音未启动");
+          result = await runPracticeFromAiRecording(input, rec);
+        } else {
+          const handle = listenRef.current;
+          if (!handle) throw new SpeechRecognitionError("语音识别未启动");
+          handle.stop();
+          result = await runPracticeFromListenHandle(input, handle);
+        }
+        setCurrentEval(result.evaluation);
+        setEvalMode(result.mode);
+        setEvalNote(result.fallbackNote ?? null);
+        setPhase("feedback");
+      } catch (err) {
+        listenRef.current?.abort();
+        if (err instanceof SpeechRecognitionError) {
+          setActionError(err.message);
+        } else {
+          setActionError(err instanceof Error ? err.message : "录音或评估失败");
+        }
+      } finally {
+        micActiveRef.current = false;
+        setListening(false);
+        listenRef.current = null;
+        recordRef.current = null;
+      }
+    })();
+  }
+
   function rate(score: number) {
     startTransition(async () => {
       try {
@@ -79,7 +180,7 @@ export function ReviewClient({ items }: { items: ReviewItem[] }) {
         setRateError(null);
         if (score >= 3) setCorrect((c) => c + 1);
         setIdx((i) => i + 1);
-        setRevealed(false);
+        resetCard();
       } catch (err) {
         console.error("rateReview failed", err);
         setRateError("评分保存失败，请重试");
@@ -89,7 +190,6 @@ export function ReviewClient({ items }: { items: ReviewItem[] }) {
 
   return (
     <div className="max-w-lg mx-auto px-4 py-6 pb-24 md:pb-6">
-      {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <h1 className="text-xl font-bold text-foreground">今日复习</h1>
         <Badge className="bg-primary/10 text-primary border-0">
@@ -98,7 +198,7 @@ export function ReviewClient({ items }: { items: ReviewItem[] }) {
       </div>
 
       <div className="flex justify-between text-sm text-muted-foreground mb-2">
-        <span>今日复习</span>
+        <span>开口复习</span>
         <span className="font-medium text-foreground tabular-nums">
           {doneCount} / {total}
         </span>
@@ -110,30 +210,64 @@ export function ReviewClient({ items }: { items: ReviewItem[] }) {
         />
       </div>
 
-      {/* Card */}
-      {rateError && (
-        <p className="text-sm text-destructive text-center mb-4">{rateError}</p>
+      {(rateError || actionError) && (
+        <p className="text-sm text-destructive text-center mb-4">
+          {rateError ?? actionError}
+        </p>
       )}
+
       <Card className="rounded-2xl border p-8">
         <p className="text-xs text-muted-foreground mb-4 text-center">
           {item.stageLabel} · 第{item.lesson_num}课 · 上次 {item.daysSince} 天前
         </p>
 
-        {!revealed ? (
+        {phase === "speak" && (
           <>
-            <p className="text-2xl font-medium text-foreground text-center leading-relaxed mb-8">
+            <p className="text-2xl font-medium text-foreground text-center leading-relaxed mb-6">
               {item.question}
             </p>
             <Button
-              size="lg"
               variant="outline"
-              className="w-full rounded-xl"
-              onClick={() => setRevealed(true)}
+              size="sm"
+              className="mx-auto mb-6 flex rounded-xl"
+              onClick={() => speakEnglish(item.question)}
             >
-              点击显示答案
+              <Volume2 className="w-4 h-4 mr-2" />
+              听问题
             </Button>
+            <MicRecordButton
+              busy={listening}
+              onPressStart={onMicPressStart}
+              onPressEnd={onMicPressEnd}
+            />
+            <button
+              type="button"
+              className="mt-6 w-full text-xs text-muted-foreground underline"
+              onClick={() => setPhase("rate")}
+            >
+              想不起来，直接看答案
+            </button>
           </>
-        ) : (
+        )}
+
+        {phase === "feedback" && currentEval && (
+          <EvaluationFeedback
+            evaluation={currentEval}
+            mode={evalMode}
+            modeNote={evalNote}
+            onRetry={() => {
+              setCurrentEval(null);
+              setEvalNote(null);
+              setPhase("speak");
+            }}
+            onContinue={() => setPhase("rate")}
+            continueLabel="看答案并评分 →"
+            skipLabel="看答案并评分"
+            pending={isPending}
+          />
+        )}
+
+        {phase === "rate" && (
           <>
             <p className="text-lg text-muted-foreground text-center opacity-60 mb-3">
               {item.question}
@@ -142,7 +276,15 @@ export function ReviewClient({ items }: { items: ReviewItem[] }) {
             <p className="text-xl font-medium text-foreground text-center mb-6 leading-relaxed">
               {item.answer}
             </p>
-
+            <Button
+              variant="ghost"
+              size="sm"
+              className="mx-auto mb-4 flex rounded-xl"
+              onClick={() => speakEnglish(item.answer, 0.8)}
+            >
+              <Volume2 className="w-4 h-4 mr-2" />
+              听参考答案
+            </Button>
             <p className="text-sm text-muted-foreground text-center mb-4">
               你记得吗？
             </p>

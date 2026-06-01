@@ -1,0 +1,73 @@
+@keyframes tf-scene-pulse {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(0.92);
+    opacity: 0.85;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.06);
+    opacity: 1;
+  }
+}
+
+@keyframes tf-scene-shake {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  25% {
+    transform: translate(-50%, -50%) rotate(-5deg);
+  }
+  75% {
+    transform: translate(-50%, -50%) rotate(5deg);
+  }
+}
+
+@keyframes tf-scene-bounce {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) translateY(0);
+  }
+  50% {
+    transform: translate(-50%, -50%) translateY(-6px);
+  }
+}
+
+.tf-scene-pulse-ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 5.5rem;
+  height: 4.25rem;
+  border-radius: 9999px;
+  border: 2.5px solid rgb(16 185 129);
+  background: rgb(16 185 129 / 0.12);
+  animation: tf-scene-pulse 1.4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.tf-scene-focus-chip {
+  position: absolute;
+  left: 50%;
+  top: calc(50% - 2.75rem);
+  transform: translateX(-50%);
+  z-index: 2;
+  border-radius: 9999px;
+  background: rgb(16 185 129);
+  padding: 0.2rem 0.65rem;
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: white;
+  text-transform: uppercase;
+  box-shadow: 0 4px 14px rgb(16 185 129 / 0.45);
+  white-space: nowrap;
+}
+
+.tf-scene-prop-shake {
+  animation: tf-scene-shake 0.65s ease-in-out infinite;
+}
+
+.tf-scene-prop-bounce {
+  animation: tf-scene-bounce 1.3s ease-in-out infinite;
+}

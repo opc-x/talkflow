@@ -16,10 +16,15 @@ export interface ContentBlock {
   ai_explanation?: string | null;
 }
 
+import type { VisualState } from "@/lib/visual-state";
+
 export interface QAPair {
   question: string; // empty string for grammar notes
   answer: string;
   explanation?: string | null; // grammar_note: Chinese AI explanation
+  qaPairId?: number;
+  audioUrl?: string | null;
+  visualState?: VisualState | null;
 }
 
 export interface Segment {
@@ -102,4 +107,56 @@ export function groupIntoSegments(blocks: ContentBlock[]): Segment[] {
   }
 
   return segments;
+}
+
+function qaPairKey(question: string, answer: string) {
+  return `${question.trim().toLowerCase()}|${answer.trim().toLowerCase()}`;
+}
+
+/** Attach DB qa_pair ids + audio_url + visual_state to parsed segment pairs */
+export function enrichSegmentsWithQaPairs(
+  segments: Segment[],
+  rows: {
+    id: number;
+    question: string;
+    answer: string | null;
+    audio_url: string | null;
+    visual_state?: unknown;
+  }[]
+): Segment[] {
+  const map = new Map(
+    rows.map((r) => [qaPairKey(r.question, r.answer ?? ""), r])
+  );
+
+  return segments.map((seg) => ({
+    ...seg,
+    pairs: seg.pairs.map((pair) => {
+      if (!pair.question) return pair;
+      const row = map.get(qaPairKey(pair.question, pair.answer));
+      if (!row) return pair;
+      const visualState = parseStoredVisualState(row.visual_state);
+      return {
+        ...pair,
+        qaPairId: row.id,
+        audioUrl: row.audio_url,
+        visualState,
+      };
+    }),
+  }));
+}
+
+function parseStoredVisualState(raw: unknown): VisualState | null {
+  if (!raw || typeof raw !== "object") {
+    if (typeof raw === "string") {
+      try {
+        return parseStoredVisualState(JSON.parse(raw));
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  }
+  const o = raw as VisualState;
+  if (!Array.isArray(o.objects)) return null;
+  return o;
 }
