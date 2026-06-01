@@ -19,6 +19,7 @@ import { resolve } from "node:path";
 import OpenAI from "openai";
 import { loadEnv, getGitHubToken } from "./_env.js";
 import { withClient } from "./_db.js";
+import { chatJson, llmBackend, type ChatMessage } from "./_llm-json.js";
 
 loadEnv();
 
@@ -128,52 +129,6 @@ function createOpenAI(): OpenAI {
     apiKey: process.env.OPENAI_API_KEY,
     baseURL: activeBaseUrl,
   });
-}
-
-function withJsonHint(
-  messages: OpenAI.Chat.ChatCompletionMessageParam[],
-): OpenAI.Chat.ChatCompletionMessageParam[] {
-  return messages.map((m) => {
-    if (typeof m.content !== "string" || /json/i.test(m.content)) return m;
-    return { ...m, content: `${m.content}\n\nRespond with valid JSON only.` };
-  });
-}
-
-function parseJsonLoose<T>(raw: string): T {
-  const trimmed = raw.trim();
-  try {
-    return JSON.parse(trimmed) as T;
-  } catch {
-    const start = trimmed.indexOf("{");
-    const end = trimmed.lastIndexOf("}");
-    if (start >= 0 && end > start) {
-      return JSON.parse(trimmed.slice(start, end + 1)) as T;
-    }
-    throw new Error(`invalid JSON (${trimmed.length} chars)`);
-  }
-}
-
-async function chatJson<T>(
-  openai: OpenAI,
-  messages: OpenAI.Chat.ChatCompletionMessageParam[],
-  maxTokens: number,
-): Promise<T> {
-  let lastErr: unknown;
-  for (let attempt = 0; attempt < 3; attempt++) {
-    try {
-      const resp = await openai.chat.completions.create({
-        model: MODEL,
-        response_format: { type: "json_object" },
-        messages: withJsonHint(messages),
-        max_completion_tokens: Math.max(maxTokens, 64),
-      });
-      return parseJsonLoose<T>(resp.choices[0]?.message?.content ?? "{}");
-    } catch (err) {
-      lastErr = err;
-      await sleep(400 * (attempt + 1));
-    }
-  }
-  throw lastErr;
 }
 
 function isGarbageTerm(term: string): boolean {
@@ -406,7 +361,6 @@ async function auditLessonWithLlm(
   }
 
   return chatJson<LlmLessonFix>(
-    openai,
     [
       {
         role: "system",
@@ -450,8 +404,10 @@ Return json:
             .map((q) => ({ q: q.question, a: q.answer })),
         }),
       },
-    ],
+    ] as ChatMessage[],
     2500,
+    openai,
+    MODEL,
   );
 }
 
@@ -621,7 +577,6 @@ async function scanLesson(
     if (cov < 0.75 && !dryRun) {
       try {
         const expanded = await chatJson<{ image_prompt: string; title: string }>(
-          openai,
           [
             {
               role: "system",
@@ -631,8 +586,10 @@ async function scanLesson(
               role: "user",
               content: `Terms: ${core.join(", ")}\nCurrent: ${(scene.image_prompt ?? "").slice(0, 800)}`,
             },
-          ],
+          ] as ChatMessage[],
           1200,
+          openai,
+          MODEL,
         );
         if (expanded.image_prompt && lengthTrim(expanded.image_prompt) >= 20) {
           await client.query(
@@ -820,8 +777,15 @@ async function stepScan(
     writeFileSync(CHECKPOINT_PATH, JSON.stringify({ done_lessons: [] }));
   }
   const cp = loadCheckpoint();
-  const openai = createOpenAI();
-  console.log(`OpenAI: ${activeBaseUrl} model=${MODEL}`);
+  const backend = llmBackend();
+  const openai = backend === "openai" ? createOpenAI() : (null as unknown as OpenAI);
+  console.log(
+    `LLM: ${backend}${
+      backend === "cursor"
+        ? ` agent model=${process.env.CURSOR_AGENT_MODEL ?? "composer-2.5-fast"}`
+        : ` ${activeBaseUrl} model=${MODEL}`
+    }`,
+  );
 
   await withClient(async (client) => {
     for (const lesson of lessons) {

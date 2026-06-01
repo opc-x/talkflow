@@ -28,9 +28,20 @@ export interface Segment {
   pairs: QAPair[];
 }
 
-function blockNum(id: string): number {
+export function blockNum(id: string): number {
   const m = id.match(/_block(\d+)$/);
   return m ? parseInt(m[1]) : 0;
+}
+
+export function compareBlockIds(a: string, b: string): number {
+  const pdf = (id: string) => {
+    const m = id.match(/pdf(\d+)/);
+    return m ? parseInt(m[1], 10) : 0;
+  };
+  const pa = pdf(a);
+  const pb = pdf(b);
+  if (pa !== pb) return pa - pb;
+  return blockNum(a) - blockNum(b);
 }
 
 function parseBlock(block: ContentBlock): QAPair[] {

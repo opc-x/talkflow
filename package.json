@@ -5,6 +5,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
+    "test": "vitest run tests/unit",
+    "test:watch": "vitest tests/unit",
+    "test:lesson": "vitest run tests/data/lesson1.test.ts",
     "db:migrate:scene": "tsx scripts/apply-migration.ts",
     "db:fix-ligatures": "tsx scripts/fix-term-ligatures.ts",
     "db:check-terms": "tsx scripts/check-term-validity.ts",
@@ -16,6 +19,8 @@
     "db:fix-issue-62": "tsx scripts/fix-issue-62.ts",
     "db:fix-issue-63": "tsx scripts/fix-issue-63.ts",
     "db:fix-issue-64": "tsx scripts/fix-issue-64.ts",
+    "db:sync-terms-qa": "tsx scripts/sync-terms-qa-links.ts",
+    "db:semantic-audit": "LLM_BACKEND=cursor tsx scripts/fix-issue-63.ts --step=all",
     "issue:19:report": "tsx scripts/post-final-report.ts"
   },
   "dependencies": {
@@ -54,6 +59,7 @@
     "tailwindcss": "^3.4.1",
     "tailwindcss-animate": "^1.0.7",
     "tsx": "^4.22.3",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.7"
   }
 }

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { groupIntoSegments, VOCAB_TERM_KINDS } from "@/lib/learn";
+import { groupIntoSegments, VOCAB_TERM_KINDS, compareBlockIds } from "@/lib/learn";
 import { SessionCard } from "@/components/learn/session-card";
 import { getStageForLesson } from "@/lib/stages";
 import type { VocabTerm } from "@/components/learn/vocab-list";
@@ -73,14 +73,26 @@ export default async function LessonPage({ params }: Props) {
 
   const { data: termsRows } = await supabase
     .from("terms")
-    .select("term, normalized, definition, phonetic")
+    .select("term, normalized, definition, phonetic, block_id, position")
     .eq("book_num", bookNum)
     .eq("lesson_num", lessonNum)
     .in("term_kind", [...VOCAB_TERM_KINDS])
-    .limit(40);
+    .limit(80);
 
-  type TermRow = { term: string; normalized: string; definition: string | null; phonetic: string | null };
-  const vocabTerms: VocabTerm[] = ((termsRows as TermRow[] | null) ?? []).map((row) => {
+  type TermRow = {
+    term: string;
+    normalized: string;
+    definition: string | null;
+    phonetic: string | null;
+    block_id: string;
+    position: number | null;
+  };
+  const sortedTerms = [...((termsRows as TermRow[] | null) ?? [])].sort((a, b) => {
+    const blockCmp = compareBlockIds(a.block_id, b.block_id);
+    if (blockCmp !== 0) return blockCmp;
+    return (a.position ?? 999) - (b.position ?? 999);
+  });
+  const vocabTerms: VocabTerm[] = sortedTerms.map((row) => {
     const rawTerm = (row.term || row.normalized) as string;
     return {
       term: normalizeDisplayText(rawTerm),

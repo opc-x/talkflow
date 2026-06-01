@@ -74,8 +74,12 @@ export interface Database {
           pdf_page: number;
           book_page: number | null;
           position: number | null;
+          qa_pair_id: number | null;
           metadata: Json;
           cluster_name: string | null;
+          definition: string | null;
+          phonetic: string | null;
+          term_kind: string | null;
           embedding: string | null;
           created_at: string;
         };
