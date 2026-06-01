@@ -4,6 +4,9 @@ import type { AnimationPreset, SceneObject } from "@/lib/visual-state";
 import { slotToPercent } from "@/lib/scene-layout";
 import "./scene-effects.css";
 
+/**
+ * 场景聚光灯 - 高亮目标物体并显示标签
+ */
 export function SceneSpotlight({
   objects,
   animation,
@@ -16,15 +19,31 @@ export function SceneSpotlight({
   const highlighted = objects.filter((o) => o.highlight);
   if (!highlighted.length) return null;
 
+  // 根据动画类型选择不同的样式
+  const getSpatialClass = () => {
+    switch (animation) {
+      case "spatial_on":
+        return "tf-scene-spatial-on";
+      case "spatial_under":
+        return "tf-scene-spatial-under";
+      case "spatial_in":
+        return "tf-scene-spatial-in";
+      default:
+        return "";
+    }
+  };
+
+  const showPulse = animation === "pulse_highlight";
+  const isSpatial =
+    animation === "spatial_on" ||
+    animation === "spatial_under" ||
+    animation === "spatial_in";
+  const spatialClass = getSpatialClass();
+
   return (
     <div className="pointer-events-none absolute inset-0 z-[1]" aria-hidden>
       {highlighted.map((obj) => {
         const { left, top } = slotToPercent(obj.slot);
-        const showPulse = animation === "pulse_highlight";
-        const showBounce =
-          animation === "spatial_on" ||
-          animation === "spatial_under" ||
-          animation === "spatial_in";
 
         return (
           <div
@@ -32,13 +51,15 @@ export function SceneSpotlight({
             className="absolute"
             style={{ left, top, width: 0, height: 0 }}
           >
+            {/* 主高亮环 */}
             {showPulse && <div className="tf-scene-pulse-ring" />}
-            {showBounce && (
-              <div
-                className="tf-scene-pulse-ring tf-scene-prop-bounce"
-                style={{ opacity: 0.7 }}
-              />
+            
+            {/* 空间位置动画 */}
+            {isSpatial && (
+              <div className={`tf-scene-pulse-ring ${spatialClass}`} />
             )}
+            
+            {/* 焦点标签 */}
             {focusLabel && obj.highlight && (
               <span className="tf-scene-focus-chip">{focusLabel}</span>
             )}
@@ -49,7 +70,9 @@ export function SceneSpotlight({
   );
 }
 
-/** Dimmed + shake targets (wrong noun in negation drills) */
+/**
+ * 否定/错误标记 - 用于"No, it isn't"类型的回答
+ */
 export function SceneShakeMarkers({
   objects,
   animation,
@@ -68,18 +91,10 @@ export function SceneShakeMarkers({
         return (
           <div
             key={`shake-${obj.id}`}
-            className="absolute tf-scene-prop-shake"
+            className="absolute"
             style={{ left, top, width: 0, height: 0 }}
           >
-            <div
-              className="tf-scene-pulse-ring"
-              style={{
-                borderColor: "rgb(239 68 68)",
-                background: "rgb(239 68 68 / 0.08)",
-                width: "4.5rem",
-                height: "3.5rem",
-              }}
-            />
+            <div className="tf-scene-error-ring" />
           </div>
         );
       })}

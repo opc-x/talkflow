@@ -1,167 +1,224 @@
-/** Storyset-inspired flat props — top-down table view, soft shadows */
+/** TalkFlow 精美道具 — Lesson 1 专用，更精致的 SVG 绘制 */
 
 type Props = { dimmed?: boolean };
 
-function SoftShadow({ wide = false }: { wide?: boolean }) {
+function SoftShadow({ wide = false, color = "#000" }: { wide?: boolean; color?: string }) {
   return (
     <ellipse
       cx="0"
-      cy="8"
-      rx={wide ? 34 : 26}
-      ry="4"
-      fill="#000"
-      opacity="0.14"
+      cy="10"
+      rx={wide ? 36 : 28}
+      ry="5"
+      fill={color}
+      opacity="0.18"
     />
   );
 }
 
 export function BookSprite({ dimmed }: Props) {
-  const o = dimmed ? 0.4 : 1;
+  const o = dimmed ? 0.35 : 1;
   return (
     <g opacity={o}>
       <SoftShadow wide />
-      <rect x="-34" y="-6" width="68" height="14" rx="3" fill="#7C2D12" />
-      <rect x="-32" y="-8" width="64" height="12" rx="2" fill="#FEF3C7" />
-      <rect x="-30" y="-6" width="58" height="10" rx="2" fill="#E11D48" />
-      <rect x="-30" y="-6" width="7" height="10" rx="1" fill="#9F1239" />
-      <rect x="-14" y="-3" width="26" height="3" rx="1" fill="#FDA4AF" opacity="0.75" />
+      {/* 书脊 */}
+      <rect x="-38" y="-8" width="76" height="18" rx="3" fill="#7C2D12" />
+      {/* 书页侧边 */}
+      <rect x="-36" y="-10" width="72" height="16" rx="2" fill="#FEF3C7" />
+      <g opacity="0.3">
+        <line x1="-32" y1="-8" x2="-32" y2="4" stroke="#D4A574" strokeWidth="0.5" />
+        <line x1="-28" y1="-8" x2="-28" y2="4" stroke="#D4A574" strokeWidth="0.5" />
+        <line x1="-24" y1="-8" x2="-24" y2="4" stroke="#D4A574" strokeWidth="0.5" />
+      </g>
+      {/* 封面 */}
+      <rect x="-34" y="-8" width="68" height="14" rx="2" fill="#E11D48" />
+      {/* 封面装饰 */}
+      <rect x="-34" y="-8" width="10" height="14" rx="2" fill="#9F1239" />
+      {/* 书名区域 */}
+      <rect x="-16" y="-5" width="32" height="4" rx="2" fill="#FDA4AF" opacity="0.8" />
+      <rect x="-10" y="1" width="20" height="2" rx="1" fill="#FDA4AF" opacity="0.5" />
+      {/* 高光 */}
+      <rect x="-32" y="-7" width="62" height="3" rx="1" fill="#fff" opacity="0.15" />
     </g>
   );
 }
 
 export function PenSprite({ dimmed }: Props) {
-  const o = dimmed ? 0.4 : 1;
+  const o = dimmed ? 0.35 : 1;
   return (
     <g opacity={o}>
       <SoftShadow />
-      {/* barrel */}
-      <rect x="-26" y="-5" width="40" height="10" rx="5" fill="url(#penGrad)" />
-      {/* grip rings */}
-      <rect x="-8" y="-4" width="3" height="8" rx="1" fill="#1E40AF" opacity="0.5" />
-      <rect x="-2" y="-4" width="3" height="8" rx="1" fill="#1E40AF" opacity="0.5" />
-      {/* clip */}
-      <path
-        d="M -22 -5 L -18 -5 L -16 -12 L -20 -12 Z"
-        fill="#2563EB"
-        stroke="#1D4ED8"
-        strokeWidth="0.5"
-      />
-      {/* tip cone */}
-      <polygon points="14,0 22,-5 22,5" fill="#1E293B" />
-      <polygon points="14,0 20,-3 20,3" fill="#334155" />
-      {/* click button */}
-      <rect x="-28" y="-4" width="6" height="8" rx="3" fill="#3B82F6" />
-      <circle cx="-25" cy="-5" r="2" fill="#60A5FA" />
+      {/* 笔身渐变 */}
+      <defs>
+        <linearGradient id="penBodyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#3B82F6" />
+          <stop offset="50%" stopColor="#2563EB" />
+          <stop offset="100%" stopColor="#1D4ED8" />
+        </linearGradient>
+      </defs>
+      {/* 笔身 */}
+      <rect x="-30" y="-6" width="48" height="12" rx="6" fill="url(#penBodyGrad)" />
+      {/* 笔身高光 */}
+      <rect x="-28" y="-5" width="44" height="3" rx="1.5" fill="#60A5FA" opacity="0.5" />
+      {/* 握笔槽 */}
+      <rect x="-6" y="-5" width="4" height="10" rx="2" fill="#1E40AF" opacity="0.4" />
+      <rect x="2" y="-5" width="4" height="10" rx="2" fill="#1E40AF" opacity="0.4" />
+      {/* 笔夹 */}
+      <path d="M -26 -6 L -20 -6 L -18 -14 L -24 -14 Z" fill="#2563EB" stroke="#1D4ED8" strokeWidth="0.8" />
+      <rect x="-24" y="-13" width="4" height="2" rx="1" fill="#60A5FA" />
+      {/* 笔尖 */}
+      <polygon points="18,0 28,-5 28,5" fill="#374151" />
+      <polygon points="18,0 26,-3 26,3" fill="#6B7280" />
+      <circle cx="26" cy="0" r="1" fill="#1F2937" />
+      {/* 按钮 */}
+      <rect x="-32" y="-4" width="6" height="8" rx="3" fill="#60A5FA" />
+      <ellipse cx="-29" cy="-4" rx="2" ry="1.5" fill="#93C5FD" />
     </g>
   );
 }
 
 export function PencilSprite({ dimmed }: Props) {
-  const o = dimmed ? 0.4 : 1;
+  const o = dimmed ? 0.35 : 1;
   return (
     <g opacity={o}>
       <SoftShadow />
-      {/* eraser */}
-      <rect x="-26" y="-4" width="8" height="8" rx="2" fill="#F472B6" />
-      <rect x="-24" y="-4" width="2" height="8" fill="#EC4899" opacity="0.4" />
-      {/* ferrule */}
-      <rect x="-18" y="-4" width="6" height="8" rx="1" fill="#D4D4D8" />
-      {/* body */}
-      <rect x="-12" y="-4" width="30" height="8" rx="2" fill="#FBBF24" />
-      <line x1="-10" y1="-4" x2="-10" y2="4" stroke="#F59E0B" strokeWidth="0.5" opacity="0.5" />
-      <line x1="-4" y1="-4" x2="-4" y2="4" stroke="#F59E0B" strokeWidth="0.5" opacity="0.5" />
-      <line x1="2" y1="-4" x2="2" y2="4" stroke="#F59E0B" strokeWidth="0.5" opacity="0.5" />
-      {/* sharpened tip */}
-      <polygon points="18,0 26,-4 26,4" fill="#FDE68A" />
-      <polygon points="18,0 24,-2.5 24,2.5" fill="#374151" />
+      {/* 橡皮 */}
+      <rect x="-30" y="-5" width="10" height="10" rx="2" fill="#F472B6" />
+      <rect x="-28" y="-5" width="3" height="10" fill="#EC4899" opacity="0.5" />
+      {/* 金属圈 */}
+      <rect x="-20" y="-5" width="8" height="10" rx="1" fill="#D4D4D8" />
+      <rect x="-19" y="-4" width="6" height="2" rx="1" fill="#A1A1AA" opacity="0.5" />
+      <rect x="-19" y="2" width="6" height="2" rx="1" fill="#A1A1AA" opacity="0.5" />
+      {/* 铅笔身体 */}
+      <rect x="-12" y="-5" width="36" height="10" rx="2" fill="#FBBF24" />
+      {/* 六边形痕迹 */}
+      <line x1="-8" y1="-5" x2="-8" y2="5" stroke="#F59E0B" strokeWidth="0.8" opacity="0.4" />
+      <line x1="0" y1="-5" x2="0" y2="5" stroke="#F59E0B" strokeWidth="0.8" opacity="0.4" />
+      <line x1="8" y1="-5" x2="8" y2="5" stroke="#F59E0B" strokeWidth="0.8" opacity="0.4" />
+      <line x1="16" y1="-5" x2="16" y2="5" stroke="#F59E0B" strokeWidth="0.8" opacity="0.4" />
+      {/* 高光 */}
+      <rect x="-10" y="-4" width="32" height="2" rx="1" fill="#FDE68A" opacity="0.6" />
+      {/* 削尖部分 */}
+      <polygon points="24,0 34,-5 34,5" fill="#FDE68A" />
+      <polygon points="24,0 32,-3 32,3" fill="#374151" />
+      <circle cx="32" cy="0" r="1" fill="#1F2937" />
     </g>
   );
 }
 
 export function BoxSprite({ dimmed }: Props) {
-  const o = dimmed ? 0.38 : 1;
+  const o = dimmed ? 0.32 : 1;
   return (
-    <g opacity={o} transform="translate(0,-14)">
-      <ellipse cx="0" cy="14" rx="18" ry="4" fill="#000" opacity="0.1" />
-      {/* front face */}
-      <rect x="-16" y="-8" width="32" height="24" rx="3" fill="#D97706" />
-      {/* top flap */}
-      <path d="M -16 -8 L 0 -18 L 16 -8 Z" fill="#F59E0B" />
-      <path d="M -16 -8 L 0 -14 L 16 -8" fill="none" stroke="#B45309" strokeWidth="1" />
-      {/* tape */}
-      <rect x="-4" y="-16" width="8" height="10" rx="1" fill="#FDE68A" opacity="0.6" />
-      {/* label */}
-      <rect x="-8" y="0" width="16" height="8" rx="1" fill="#FEF3C7" opacity="0.5" />
+    <g opacity={o} transform="translate(0,-16)">
+      <ellipse cx="0" cy="18" rx="22" ry="5" fill="#000" opacity="0.15" />
+      {/* 盒子正面 */}
+      <rect x="-20" y="-10" width="40" height="30" rx="4" fill="#D97706" />
+      {/* 盒子侧面高光 */}
+      <rect x="-20" y="-10" width="6" height="30" rx="2" fill="#F59E0B" opacity="0.4" />
+      {/* 盒盖 */}
+      <path d="M -22 -10 L 0 -22 L 22 -10 Z" fill="#F59E0B" />
+      <path d="M -20 -10 L 0 -18 L 20 -10" fill="none" stroke="#B45309" strokeWidth="1.5" />
+      {/* 胶带 */}
+      <rect x="-5" y="-20" width="10" height="14" rx="1" fill="#FDE68A" opacity="0.7" />
+      {/* 标签 */}
+      <rect x="-10" y="2" width="20" height="10" rx="2" fill="#FEF3C7" />
+      <line x1="-6" y1="5" x2="6" y2="5" stroke="#D97706" strokeWidth="1" opacity="0.5" />
+      <line x1="-4" y1="8" x2="4" y2="8" stroke="#D97706" strokeWidth="1" opacity="0.3" />
     </g>
   );
 }
 
 export function ClockSprite({ dimmed }: Props) {
-  const o = dimmed ? 0.38 : 1;
+  const o = dimmed ? 0.32 : 1;
   return (
     <g opacity={o}>
-      {/* wall shadow */}
-      <ellipse cx="2" cy="4" rx="18" ry="3" fill="#000" opacity="0.08" />
-      {/* frame */}
-      <circle cx="0" cy="0" r="18" fill="#FEFCE8" stroke="#78716C" strokeWidth="2.5" />
-      <circle cx="0" cy="0" r="15" fill="#FFFBEB" stroke="#D6D3D1" strokeWidth="1" />
-      {/* ticks */}
-      {[0, 90, 180, 270].map((deg) => (
+      {/* 墙面阴影 */}
+      <ellipse cx="3" cy="5" rx="20" ry="4" fill="#000" opacity="0.1" />
+      {/* 外框 */}
+      <circle cx="0" cy="0" r="22" fill="#FEFCE8" stroke="#78716C" strokeWidth="3" />
+      {/* 内框 */}
+      <circle cx="0" cy="0" r="18" fill="#FFFBEB" stroke="#E5E7EB" strokeWidth="1.5" />
+      {/* 刻度 */}
+      {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map((deg) => (
         <line
           key={deg}
           x1="0"
-          y1="-12"
+          y1={deg % 90 === 0 ? "-14" : "-15"}
           x2="0"
-          y2="-14"
-          stroke="#78716C"
-          strokeWidth="1.5"
+          y2={deg % 90 === 0 ? "-17" : "-16"}
+          stroke={deg % 90 === 0 ? "#44403C" : "#A8A29E"}
+          strokeWidth={deg % 90 === 0 ? 2 : 1}
           transform={`rotate(${deg})`}
         />
       ))}
-      {/* hands */}
-      <circle cx="0" cy="0" r="2" fill="#44403C" />
-      <line x1="0" y1="0" x2="0" y2="-10" stroke="#44403C" strokeWidth="2" strokeLinecap="round" />
-      <line x1="0" y1="0" x2="6" y2="2" stroke="#78716C" strokeWidth="1.5" strokeLinecap="round" />
+      {/* 中心轴 */}
+      <circle cx="0" cy="0" r="3" fill="#44403C" />
+      <circle cx="0" cy="0" r="1.5" fill="#78716C" />
+      {/* 时针 */}
+      <line x1="0" y1="2" x2="0" y2="-10" stroke="#44403C" strokeWidth="2.5" strokeLinecap="round" />
+      {/* 分针 */}
+      <line x1="0" y1="2" x2="7" y2="3" stroke="#78716C" strokeWidth="2" strokeLinecap="round" />
+      {/* 秒针 */}
+      <line x1="0" y1="4" x2="-4" y2="8" stroke="#EF4444" strokeWidth="1" strokeLinecap="round" />
     </g>
   );
 }
 
 export function PersonSprite({ sprite, dimmed }: Props & { sprite: string }) {
-  const o = dimmed ? 0.38 : 1;
+  const o = dimmed ? 0.32 : 1;
   const isFemale = sprite === "woman" || sprite === "girl";
   const isChild = sprite === "boy" || sprite === "girl";
-  const scale = isChild ? 0.82 : 1;
+  const scale = isChild ? 0.8 : 1;
   const shirt = isFemale ? "#EC4899" : "#6366F1";
+  const shirtLight = isFemale ? "#F472B6" : "#818CF8";
   const hair = isFemale ? "#78350F" : "#1C1917";
+  const skin = "#FCD34D";
 
   return (
-    <g opacity={o} transform={`scale(${scale}) translate(0,-32)`}>
-      <ellipse cx="0" cy="38" rx="14" ry="4" fill="#000" opacity="0.1" />
-      {/* legs */}
-      <rect x="-8" y="24" width="7" height="14" rx="3" fill="#374151" />
-      <rect x="1" y="24" width="7" height="14" rx="3" fill="#374151" />
-      {/* body */}
-      <rect x="-14" y="8" width="28" height="22" rx="8" fill={shirt} />
-      {/* arms */}
-      <rect x="-20" y="12" width="8" height="16" rx="4" fill={shirt} />
-      <rect x="12" y="12" width="8" height="16" rx="4" fill={shirt} />
-      {/* neck */}
-      <rect x="-4" y="2" width="8" height="8" rx="2" fill="#FBBF24" />
-      {/* head */}
-      <circle cx="0" cy="-2" r="12" fill="#FBBF24" />
-      {/* hair */}
+    <g opacity={o} transform={`scale(${scale}) translate(0,-34)`}>
+      <ellipse cx="0" cy="42" rx="16" ry="5" fill="#000" opacity="0.12" />
+      {/* 腿 */}
+      <rect x="-9" y="26" width="8" height="16" rx="4" fill="#374151" />
+      <rect x="1" y="26" width="8" height="16" rx="4" fill="#374151" />
+      {/* 鞋 */}
+      <ellipse cx="-5" cy="41" rx="5" ry="3" fill="#1F2937" />
+      <ellipse cx="5" cy="41" rx="5" ry="3" fill="#1F2937" />
+      {/* 身体 */}
+      <rect x="-16" y="6" width="32" height="26" rx="10" fill={shirt} />
+      {/* 身体高光 */}
+      <rect x="-14" y="8" width="10" height="22" rx="5" fill={shirtLight} opacity="0.3" />
+      {/* 手臂 */}
+      <rect x="-22" y="10" width="10" height="18" rx="5" fill={shirt} />
+      <rect x="12" y="10" width="10" height="18" rx="5" fill={shirt} />
+      {/* 手 */}
+      <circle cx="-17" cy="28" r="5" fill={skin} />
+      <circle cx="17" cy="28" r="5" fill={skin} />
+      {/* 脖子 */}
+      <rect x="-5" y="0" width="10" height="10" rx="3" fill={skin} />
+      {/* 头 */}
+      <circle cx="0" cy="-4" r="14" fill={skin} />
+      {/* 头发 */}
       {isFemale ? (
-        <path
-          d="M -12 -6 Q -14 4 -8 8 Q 0 12 8 8 Q 14 4 12 -6 Q 8 -14 0 -14 Q -8 -14 -12 -6"
-          fill={hair}
-        />
+        <>
+          <path
+            d="M -14 -8 Q -16 4 -10 10 Q 0 14 10 10 Q 16 4 14 -8 Q 10 -18 0 -18 Q -10 -18 -14 -8"
+            fill={hair}
+          />
+          {/* 刘海 */}
+          <path d="M -10 -12 Q -6 -6 0 -10 Q 6 -6 10 -12" fill={hair} />
+        </>
       ) : (
-        <path d="M -12 -4 Q -10 -14 0 -14 Q 10 -14 12 -4 L 12 -2 Q 0 -8 -12 -2 Z" fill={hair} />
+        <path d="M -14 -6 Q -12 -18 0 -18 Q 12 -18 14 -6 L 14 -2 Q 0 -10 -14 -2 Z" fill={hair} />
       )}
-      {/* face */}
-      <circle cx="-4" cy="-2" r="1.5" fill="#1C1917" />
-      <circle cx="4" cy="-2" r="1.5" fill="#1C1917" />
-      <path d="M -3 3 Q 0 6 3 3" fill="none" stroke="#1C1917" strokeWidth="1" strokeLinecap="round" />
+      {/* 眼睛 */}
+      <ellipse cx="-5" cy="-4" rx="2" ry="2.5" fill="#1C1917" />
+      <ellipse cx="5" cy="-4" rx="2" ry="2.5" fill="#1C1917" />
+      <circle cx="-4" cy="-5" r="0.8" fill="#fff" />
+      <circle cx="6" cy="-5" r="0.8" fill="#fff" />
+      {/* 腮红 */}
+      <ellipse cx="-8" cy="0" rx="3" ry="2" fill="#FECACA" opacity="0.5" />
+      <ellipse cx="8" cy="0" rx="3" ry="2" fill="#FECACA" opacity="0.5" />
+      {/* 嘴巴 */}
+      <path d="M -4 4 Q 0 8 4 4" fill="none" stroke="#1C1917" strokeWidth="1.2" strokeLinecap="round" />
     </g>
   );
 }
