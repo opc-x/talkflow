@@ -1,27 +1,31 @@
 "use client";
 
-import type { SceneObject, SlotLayout } from "@/lib/visual-state";
-import { SLOT_LAYOUT } from "@/lib/visual-state";
+import type { ArtPackId } from "@/lib/scene-art-pack";
+import { getSlotLayout } from "@/lib/scene-layout";
+import type { SceneObject, SizeVariant, SlotLayout } from "@/lib/visual-state";
 import {
   BookSprite,
   BoxSprite,
   ClockSprite,
+  LightSprite,
   PenSprite,
   PencilSprite,
   PersonSprite,
   PictureSprite,
   PropSpriteDefs,
+  RoomSprite,
+  TableSprite,
 } from "@/components/scenes/prop-sprites";
 
 const EMERALD = "#10B981";
 
-function SpriteShape({
-  sprite,
-  dimmed,
-}: {
-  sprite: string;
-  dimmed?: boolean;
-}) {
+function sizeScaleFor(variant: SizeVariant | undefined, highlight: boolean): number {
+  if (!highlight || !variant) return 1;
+  if (variant === "large" || variant === "long") return 1.32;
+  return 0.78;
+}
+
+function SpriteShape({ sprite, dimmed }: { sprite: string; dimmed?: boolean }) {
   switch (sprite) {
     case "book":
       return <BookSprite dimmed={dimmed} />;
@@ -40,6 +44,12 @@ function SpriteShape({
       return <PersonSprite sprite={sprite} dimmed={dimmed} />;
     case "picture":
       return <PictureSprite dimmed={dimmed} />;
+    case "table":
+      return <TableSprite dimmed={dimmed} />;
+    case "light":
+      return <LightSprite dimmed={dimmed} />;
+    case "room":
+      return <RoomSprite dimmed={dimmed} />;
     default:
       return null;
   }
@@ -47,24 +57,31 @@ function SpriteShape({
 
 /** Draw order: back → front */
 const Z_ORDER: Record<string, number> = {
-  picture: 0,
-  clock: 1,
-  box: 2,
-  book: 3,
-  pencil: 4,
-  pen: 5,
-  man: 6,
-  woman: 6,
-  boy: 6,
-  girl: 6,
+  room: 0,
+  picture: 1,
+  light: 2,
+  clock: 3,
+  table: 4,
+  box: 5,
+  book: 6,
+  pencil: 7,
+  pen: 8,
+  man: 9,
+  woman: 9,
+  boy: 9,
+  girl: 9,
 };
 
 export function SceneSprites({
   objects,
   colourSwatch,
+  sizeVariant,
+  artPack,
 }: {
   objects: SceneObject[];
   colourSwatch?: string;
+  sizeVariant?: SizeVariant;
+  artPack?: ArtPackId;
 }) {
   const drawable = objects
     .filter(
@@ -78,8 +95,9 @@ export function SceneSprites({
   return (
     <>
       {drawable.map((obj) => {
-        const layout: SlotLayout = SLOT_LAYOUT[obj.slot] ?? SLOT_LAYOUT.table_center;
-        const scale = layout.scale ?? 1;
+        const layout: SlotLayout = getSlotLayout(artPack, obj.slot);
+        const baseScale = layout.scale ?? 1;
+        const scale = baseScale * sizeScaleFor(sizeVariant, Boolean(obj.highlight));
 
         return (
           <g
@@ -112,16 +130,18 @@ export function SceneSprites({
 export function ScenePointer({
   targetId,
   objects,
+  artPack,
 }: {
   targetId: string;
   objects: SceneObject[];
+  artPack?: ArtPackId;
 }) {
   const target =
     objects.find((o) => o.id === targetId || o.sprite === targetId) ??
     objects.find((o) => o.highlight);
   if (!target) return null;
 
-  const layout = SLOT_LAYOUT[target.slot] ?? SLOT_LAYOUT.table_center;
+  const layout = getSlotLayout(artPack, target.slot);
   const tipX = layout.x;
   const tipY = layout.y - 44;
 

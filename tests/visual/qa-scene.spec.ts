@@ -18,7 +18,7 @@ test.describe("QaScene visual capture", () => {
 
   for (const { name, q, a } of CASES) {
     test(`capture ${name}`, async ({ page }) => {
-      const url = `/zh/qa-scene-preview?q=${encodeURIComponent(q)}&a=${encodeURIComponent(a)}`;
+      const url = `/zh/qa-scene-preview?q=${encodeURIComponent(q)}&a=${encodeURIComponent(a)}&artPack=talkflow_desk_focus`;
       await page.goto(url);
       await page.waitForSelector('[data-testid="qa-scene"]', { timeout: 30_000 });
 

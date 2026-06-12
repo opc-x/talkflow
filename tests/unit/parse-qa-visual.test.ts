@@ -81,6 +81,48 @@ describe("inferVisualState", () => {
     expect(v.templateId).toBe("colour_identify");
     expect(v.colourSwatch).toBe("#1a1a1a");
   });
+
+  it("Lesson1: Anna Brown negation → man focus, woman dimmed", () => {
+    const v = inferVisualState(
+      "Is this Anna Brown?",
+      "No, it isn't Anna Brown; it's Mr Brown"
+    );
+    expect(v.focus).toBe("man");
+    expect(v.objects.find((o) => o.sprite === "woman")?.dimmed).toBe(true);
+    expect(v.objects.find((o) => o.sprite === "man")?.highlight).toBe(true);
+  });
+
+  it("Lesson1: Is this a girl? → man + dimmed girl", () => {
+    const v = inferVisualState(
+      "Is this a girl?",
+      "No, it isn't a girl; it's a man"
+    );
+    expect(v.focus).toBe("man");
+    expect(v.objects.find((o) => o.sprite === "girl")?.dimmed).toBe(true);
+  });
+
+  it("Lesson1: table size → table sprite + sizeVariant", () => {
+    const v = inferVisualState(
+      "Is the table small?",
+      "No, the table isn't small; it's large"
+    );
+    expect(v.focus).toBe("table");
+    expect(v.sizeVariant).toBe("large");
+    expect(v.animation).toBe("size_contrast");
+    expect(v.objects.find((o) => o.sprite === "table")?.highlight).toBe(true);
+  });
+
+  it("Lesson1: Where's the picture → picture highlight", () => {
+    const v = inferVisualState("Where's the picture?", "The picture's on the wall");
+    expect(v.focus).toBe("picture");
+    expect(v.objects.find((o) => o.sprite === "picture")?.highlight).toBe(true);
+  });
+
+  it("Lesson1: Where's the light → light sprite", () => {
+    const v = inferVisualState("Where's the light?", "The light's on the ceiling");
+    expect(v.focus).toBe("light");
+    expect(v.objects.find((o) => o.sprite === "light")?.highlight).toBe(true);
+  });
 });
 
 describe("scoringReference", () => {

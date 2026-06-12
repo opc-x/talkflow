@@ -25,6 +25,8 @@ export interface QAPair {
   qaPairId?: number;
   audioUrl?: string | null;
   visualState?: VisualState | null;
+  /** Per-pair illustration (one image per Q&A) */
+  sceneImageUrl?: string | null;
 }
 
 export interface Segment {
@@ -122,6 +124,7 @@ export function enrichSegmentsWithQaPairs(
     answer: string | null;
     audio_url: string | null;
     visual_state?: unknown;
+    scene_image_url?: string | null;
   }[]
 ): Segment[] {
   const map = new Map(
@@ -135,11 +138,18 @@ export function enrichSegmentsWithQaPairs(
       const row = map.get(qaPairKey(pair.question, pair.answer));
       if (!row) return pair;
       const visualState = parseStoredVisualState(row.visual_state);
+      const sceneImageUrl =
+        row.scene_image_url &&
+        row.scene_image_url !== "pending" &&
+        row.scene_image_url !== ""
+          ? row.scene_image_url
+          : null;
       return {
         ...pair,
         qaPairId: row.id,
         audioUrl: row.audio_url,
         visualState,
+        sceneImageUrl,
       };
     }),
   }));

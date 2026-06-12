@@ -1,11 +1,11 @@
 @keyframes tf-scene-pulse {
   0%,
   100% {
-    transform: translate(-50%, -50%) scale(0.92);
-    opacity: 0.85;
+    transform: translate(-50%, -50%) scale(0.94);
+    opacity: 0.8;
   }
   50% {
-    transform: translate(-50%, -50%) scale(1.06);
+    transform: translate(-50%, -50%) scale(1.05);
     opacity: 1;
   }
 }
@@ -16,10 +16,10 @@
     transform: translate(-50%, -50%) rotate(0deg);
   }
   25% {
-    transform: translate(-50%, -50%) rotate(-5deg);
+    transform: translate(-50%, -50%) rotate(-4deg);
   }
   75% {
-    transform: translate(-50%, -50%) rotate(5deg);
+    transform: translate(-50%, -50%) rotate(4deg);
   }
 }
 
@@ -29,7 +29,17 @@
     transform: translate(-50%, -50%) translateY(0);
   }
   50% {
-    transform: translate(-50%, -50%) translateY(-6px);
+    transform: translate(-50%, -50%) translateY(-8px);
+  }
+}
+
+@keyframes tf-scene-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgb(16 185 129 / 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgb(16 185 129 / 0);
   }
 }
 
@@ -37,37 +47,146 @@
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 5.5rem;
-  height: 4.25rem;
+  width: 5.75rem;
+  height: 4.5rem;
   border-radius: 9999px;
   border: 2.5px solid rgb(16 185 129);
-  background: rgb(16 185 129 / 0.12);
-  animation: tf-scene-pulse 1.4s ease-in-out infinite;
+  background: rgb(16 185 129 / 0.14);
+  animation: tf-scene-pulse 1.35s ease-in-out infinite;
   pointer-events: none;
+}
+
+.tf-scene-pulse-ring--wrong {
+  border-color: rgb(239 68 68);
+  background: rgb(239 68 68 / 0.12);
+  animation: tf-scene-shake 0.55s ease-in-out infinite;
+}
+
+.tf-scene-pulse-ring--large {
+  width: 7rem;
+  height: 5.5rem;
+  border-width: 3px;
+}
+
+.tf-scene-pulse-ring--small {
+  width: 4rem;
+  height: 3rem;
+  border-width: 2px;
+  opacity: 0.92;
+}
+
+/* 课桌特写 — 高亮圈对准单件道具 */
+[data-qa-art-pack="talkflow_desk_focus"] .tf-scene-dim-vignette {
+  background: radial-gradient(
+    ellipse 88% 72% at 50% 58%,
+    transparent 42%,
+    rgb(17 17 17 / 0.07) 100%
+  );
+}
+
+[data-qa-art-pack="talkflow_desk_focus"] .tf-scene-pulse-ring {
+  width: 4.25rem;
+  height: 2.75rem;
+  border-width: 2px;
+  background: rgb(16 185 129 / 0.1);
+}
+
+[data-qa-art-pack="talkflow_desk_focus"] .tf-scene-pulse-ring--large {
+  width: 5rem;
+  height: 3.25rem;
 }
 
 .tf-scene-focus-chip {
   position: absolute;
   left: 50%;
-  top: calc(50% - 2.75rem);
+  top: calc(50% - 2.85rem);
   transform: translateX(-50%);
   z-index: 2;
   border-radius: 9999px;
   background: rgb(16 185 129);
-  padding: 0.2rem 0.65rem;
+  padding: 0.22rem 0.7rem;
   font-size: 0.5625rem;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   color: white;
   text-transform: uppercase;
-  box-shadow: 0 4px 14px rgb(16 185 129 / 0.45);
+  box-shadow: 0 4px 16px rgb(16 185 129 / 0.4);
   white-space: nowrap;
 }
 
+.tf-scene-callout-chip {
+  border-radius: 9999px;
+  background: rgb(16 185 129);
+  padding: 0.35rem 0.85rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: white;
+  letter-spacing: 0.02em;
+  box-shadow: 0 6px 20px rgb(16 185 129 / 0.45);
+  white-space: nowrap;
+  animation: tf-scene-glow 2s ease-in-out infinite;
+}
+
+.tf-scene-question-chip {
+  max-width: 100%;
+  border-radius: 0.75rem;
+  background: rgb(17 17 17 / 0.82);
+  backdrop-filter: blur(8px);
+  padding: 0.45rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: rgb(245 245 245);
+  text-align: center;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.25);
+}
+
+.tf-scene-callout-tail {
+  display: block;
+  width: 0;
+  height: 0;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-top: 8px solid rgb(16 185 129);
+  margin-top: -2px;
+}
+
+.tf-scene-wrong-mark {
+  position: absolute;
+  left: 50%;
+  top: calc(50% - 2.5rem);
+  transform: translateX(-50%);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 9999px;
+  background: white;
+  border: 2px solid rgb(239 68 68);
+  color: rgb(239 68 68);
+  font-size: 0.65rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
 .tf-scene-prop-shake {
-  animation: tf-scene-shake 0.65s ease-in-out infinite;
+  animation: tf-scene-shake 0.55s ease-in-out infinite;
 }
 
 .tf-scene-prop-bounce {
-  animation: tf-scene-bounce 1.3s ease-in-out infinite;
+  animation: tf-scene-bounce 1.2s ease-in-out infinite;
+}
+
+.tf-scene-dim-vignette {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: radial-gradient(
+    ellipse 85% 70% at 50% 55%,
+    transparent 35%,
+    rgb(17 17 17 / 0.12) 100%
+  );
 }

@@ -27,6 +27,8 @@
     "db:fix-issue-64": "tsx scripts/fix-issue-64.ts",
     "db:sync-terms-qa": "tsx scripts/sync-terms-qa-links.ts",
     "db:qa-visual-states": "tsx scripts/generate-qa-visual-states.ts",
+    "db:qa-scene-images": "tsx scripts/generate-qa-scene-images.ts",
+    "db:qa-scene-svgs": "tsx scripts/generate-qa-scene-svgs.ts",
     "db:survey-qa": "tsx scripts/survey-qa-corpus.ts",
     "db:semantic-audit": "LLM_BACKEND=cursor tsx scripts/fix-issue-63.ts --step=all",
     "issue:19:report": "tsx scripts/post-final-report.ts"
@@ -49,6 +51,7 @@
     "react": "^19.0.0",
     "react-countup": "^6.5.3",
     "react-dom": "^19.0.0",
+    "roughjs": "^4.6.6",
     "tailwind-merge": "^3.3.0"
   },
   "devDependencies": {

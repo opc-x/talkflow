@@ -34,9 +34,14 @@ export const SLOT_IDS = [
   "wall_left",
   "wall_right",
   "wall_center",
+  "ceiling_light",
   "floor",
   "room_center",
+  "room_left",
+  "room_right",
 ] as const;
+
+export type SizeVariant = "large" | "small" | "long" | "short";
 
 export type SlotId = (typeof SLOT_IDS)[number];
 
@@ -62,7 +67,7 @@ export interface VisualState {
   template: "room_basic" | "concept_card" | "contrast_card" | "roster_card";
   /** Registry entry from lib/scene-template-registry.ts */
   templateId?: string;
-  artPack?: "talkflow_flat_v2";
+  artPack?: "talkflow_flat_v2" | "storyset_classroom" | "talkflow_desk_focus";
   focus: string;
   objects: SceneObject[];
   pointer?: { target: string; style: "finger" | "arrow" };
@@ -83,6 +88,8 @@ export interface VisualState {
   } | null;
   /** Multiple people enumerated in one answer → side-by-side roster */
   roster?: SpriteId[];
+  /** Size drill — scale highlighted prop (large/small/long/short) */
+  sizeVariant?: SizeVariant;
 }
 
 /** Pixel coords in 400×300 viewBox */
@@ -94,17 +101,20 @@ export interface SlotLayout {
 
 /** Table top ~ y=192 in room viewBox; props sit on surface, not wall */
 export const SLOT_LAYOUT: Record<SlotId, SlotLayout> = {
-  table_center: { x: 200, y: 192, scale: 1 },
-  on_book: { x: 200, y: 178, scale: 0.92 },
-  under_book: { x: 200, y: 204, scale: 0.88 },
-  in_box: { x: 268, y: 188, scale: 0.85 },
-  table_left: { x: 136, y: 191, scale: 0.92 },
-  table_right: { x: 264, y: 191, scale: 0.92 },
+  table_center: { x: 200, y: 188, scale: 1 },
+  on_book: { x: 200, y: 176, scale: 0.95 },
+  under_book: { x: 200, y: 202, scale: 0.9 },
+  in_box: { x: 268, y: 186, scale: 0.88 },
+  table_left: { x: 128, y: 189, scale: 1.08 },
+  table_right: { x: 272, y: 189, scale: 1.05 },
   wall_left: { x: 56, y: 78, scale: 1 },
   wall_right: { x: 342, y: 72, scale: 0.9 },
   wall_center: { x: 208, y: 104, scale: 1.2 },
+  ceiling_light: { x: 200, y: 52, scale: 1.15 },
   floor: { x: 318, y: 238, scale: 1 },
   room_center: { x: 200, y: 156, scale: 1.05 },
+  room_left: { x: 148, y: 158, scale: 1.08 },
+  room_right: { x: 252, y: 158, scale: 1.08 },
 };
 
 export const SPRITE_REGISTRY = new Set<string>(SPRITE_IDS);

@@ -23,7 +23,7 @@ export type QuestionType =
 
 export type HighlightStyle = "pulse_ring" | "point_hand" | "spatial_bounce" | "shake" | "none";
 
-export type ArtPackId = "talkflow_flat_v2";
+export type ArtPackId = "talkflow_flat_v2" | "storyset_classroom";
 
 export interface SceneTemplateEntry {
   id: string;

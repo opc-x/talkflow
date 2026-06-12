@@ -6,6 +6,7 @@ import {
 import type {
   AnimationPreset,
   SceneObject,
+  SizeVariant,
   SlotId,
   SpriteId,
   VisualState,
@@ -152,6 +153,40 @@ function rosterFromAnswer(answer: string): SpriteId[] {
   return out;
 }
 
+const COUNT_WORDS: Record<string, number> = {
+  one: 1,
+  two: 2,
+  three: 3,
+  four: 4,
+  five: 5,
+  six: 6,
+  seven: 7,
+  eight: 8,
+  nine: 9,
+  ten: 10,
+};
+
+/** "There are five boys" → roster animation instead of blank concept card */
+function rosterFromCounting(question: string, answer: string): SpriteId[] {
+  if (!/how many/i.test(question)) return [];
+  const a = norm(answer);
+  const m = a.match(/there are (\w+|\d+)\s+(boys|girls|men|women)\b/);
+  if (!m) return [];
+  const plural = m[2]!;
+  const singular: Record<string, SpriteId> = {
+    boys: "boy",
+    girls: "girl",
+    men: "man",
+    women: "woman",
+  };
+  const sprite = singular[plural];
+  if (!sprite) return [];
+  const raw = m[1]!;
+  const n = COUNT_WORDS[raw] ?? Number.parseInt(raw, 10);
+  const count = Number.isFinite(n) && n > 0 ? Math.min(n, 6) : 3;
+  return Array.from({ length: count }, () => sprite);
+}
+
 const PLACE_NOUNS = ["city", "town", "village"] as const;
 
 /** Detect place comparison (city/town/village) → outdoor contrast card */
@@ -187,8 +222,42 @@ function isNegativeAnswer(answer: string): boolean {
 }
 
 function wrongNounFromQuestion(question: string): string | null {
-  const m = question.match(/is this (a|the)\s+([a-z]+)/i);
-  return m ? m[2]! : null;
+  const m = question.match(/is this (?:a|the)\s+([a-z]+)/i);
+  return m ? m[1]! : null;
+}
+
+/** Proper-name / Brown family negation — wrong person in question stem */
+function wrongPersonFromQuestion(question: string): SpriteId | null {
+  const n = norm(question);
+  if (/\banna\b/.test(n)) return "woman";
+  if (/\bmrs brown\b/.test(n)) return "woman";
+  if (/\bjack brown\b/.test(n)) return "boy";
+  if (/\bmr brown\b/.test(n)) return "man";
+  return null;
+}
+
+function sizeVariantFromQa(question: string, answer: string): SizeVariant | undefined {
+  const text = norm(`${question} ${answer}`);
+  const fromAnswer = text.match(/\bit'?s\s+(large|small|long|short)\b/);
+  if (fromAnswer) return fromAnswer[1] as SizeVariant;
+  const contrast = text.match(/\bisn'?t\s+(large|small|long|short)\b.*\bit'?s\s+(large|small|long|short)\b/);
+  if (contrast) return contrast[2] as SizeVariant;
+  const qWord = text.match(/\b(large|small|long|short)\b/);
+  if (qWord && /^no\b/i.test(answer.trim())) {
+    const asked = qWord[1] as SizeVariant;
+    const flip: Record<SizeVariant, SizeVariant> = {
+      large: "small",
+      small: "large",
+      long: "short",
+      short: "long",
+    };
+    if (/\bit'?s\s+/.test(text)) {
+      const explicit = text.match(/\bit'?s\s+(large|small|long|short)\b/);
+      if (explicit) return explicit[1] as SizeVariant;
+    }
+    return flip[asked];
+  }
+  return undefined;
 }
 
 function spatialFromQa(
@@ -248,8 +317,13 @@ function defaultSlot(sprite: SpriteId, spatial: VisualState["spatial"]): SlotId 
     case "box":
       return "table_right";
     case "clock":
-    case "light":
       return "wall_right";
+    case "light":
+      return "ceiling_light";
+    case "table":
+      return "table_center";
+    case "room":
+      return "room_center";
     case "window":
       return "wall_left";
     case "man":
@@ -275,12 +349,20 @@ function buildBaseObjects(): SceneObject[] {
 }
 
 /** Only show props relevant to this Q&A — less clutter, clearer focus */
+const PEOPLE_SPRITES = new Set<SpriteId>(["man", "woman", "boy", "girl"]);
+
 function pruneObjects(
   objects: SceneObject[],
   question: string,
   answer: string,
   focus: string
 ): SceneObject[] {
+  if (PEOPLE_SPRITES.has(focus as SpriteId)) {
+    return objects.filter(
+      (o) => o.highlight || o.dimmed || PEOPLE_SPRITES.has(o.sprite)
+    );
+  }
+
   const text = norm(`${question} ${answer}`);
   const mentioned = new Set(findNouns(text));
   mentioned.add(focus);
@@ -298,7 +380,52 @@ function pruneObjects(
       (focus === "pencil" && o.sprite === "pen")
   );
 
+  const roomOnly = new Set(["room", "table", "light", "chair", "door", "window"]);
+  if (roomOnly.has(focus)) {
+    return objects.filter((o) => o.highlight || o.dimmed || o.sprite === focus);
+  }
+
   return kept.length >= 2 ? kept : objects.filter((o) => ["book", "pen", "pencil"].includes(o.sprite));
+}
+
+function ensureFocusObject(
+  objects: SceneObject[],
+  focus: SpriteId,
+  spatial: VisualState["spatial"]
+): void {
+  if (objects.some((o) => o.sprite === focus)) return;
+  objects.push({
+    id: focus,
+    sprite: focus,
+    slot: defaultSlot(focus, spatial),
+    highlight: true,
+  });
+}
+
+function addWrongPersonObject(
+  objects: SceneObject[],
+  wrongSprite: SpriteId,
+  focus: SpriteId
+): void {
+  const existing = objects.find((x) => x.sprite === wrongSprite);
+  if (existing) {
+    existing.dimmed = true;
+    existing.highlight = false;
+    existing.slot = "room_left";
+  } else {
+    objects.push({
+      id: `wrong-${wrongSprite}`,
+      sprite: wrongSprite,
+      slot: "room_left",
+      dimmed: true,
+    });
+  }
+  const hi = objects.find((o) => o.sprite === focus);
+  if (hi) {
+    hi.highlight = true;
+    hi.dimmed = false;
+    hi.slot = "room_right";
+  }
 }
 
 function pickAnimation(
@@ -363,7 +490,8 @@ export function inferVisualState(question: string, answer: string): VisualState 
   const sceneTemplate = resolveSceneTemplate(q, a);
 
   // Multiple people in one answer → side-by-side roster card
-  const roster = rosterFromAnswer(a);
+  const rosterListed = rosterFromAnswer(a);
+  const roster = rosterListed.length >= 2 ? rosterListed : rosterFromCounting(q, a);
   if (roster.length >= 2) {
     return {
       template: "roster_card",
@@ -411,9 +539,13 @@ export function inferVisualState(question: string, answer: string): VisualState 
   const focus = focusSprite;
   const spatial = spatialFromQa(q, a);
   const negative = isNegativeAnswer(a);
-  const wrong = wrongNounFromQuestion(q);
+  const wrongRaw = wrongNounFromQuestion(q);
+  const wrongPerson = wrongPersonFromQuestion(q);
+  const wrongSprite = wrongRaw ? toSprite(wrongRaw) : wrongPerson;
   const animation = pickAnimation(q, a, spatial, negative, qType);
   const colourSwatch = qType === "colour" ? colourFromAnswer(a) : undefined;
+  const sizeVariant =
+    animation === "size_contrast" ? sizeVariantFromQa(q, a) : undefined;
 
   // Only blanket-dim sibling props when the focus is itself a table prop —
   // person / picture / place drills shouldn't grey-out (and ✗) the unrelated book.
@@ -426,7 +558,7 @@ export function inferVisualState(question: string, answer: string): VisualState 
     if (obj.sprite === focus) {
       obj.highlight = true;
       obj.slot = defaultSlot(obj.sprite, spatial);
-    } else if (wrong && obj.sprite === toSprite(wrong) && negative) {
+    } else if (wrongSprite && obj.sprite === wrongSprite && negative) {
       obj.dimmed = true;
       obj.highlight = false;
     } else if (spatial && obj.sprite === toSprite(spatial.entity)) {
@@ -437,17 +569,13 @@ export function inferVisualState(question: string, answer: string): VisualState 
     }
   }
 
-  const peopleSprites = new Set(["man", "woman", "boy", "girl"]);
-  if (peopleSprites.has(focus)) {
-    const personId = focus;
-    if (!objects.some((o) => o.sprite === personId)) {
-      objects.push({
-        id: personId,
-        sprite: personId as SpriteId,
-        slot: "room_center",
-        highlight: true,
-      });
+  if (PEOPLE_SPRITES.has(focus)) {
+    ensureFocusObject(objects, focus, spatial);
+    if (negative && wrongSprite && PEOPLE_SPRITES.has(wrongSprite) && wrongSprite !== focus) {
+      addWrongPersonObject(objects, wrongSprite, focus);
     }
+  } else {
+    ensureFocusObject(objects, focus, spatial);
   }
 
   // Picture is wall-mounted — point to it rather than table on/under/in motion
@@ -474,6 +602,7 @@ export function inferVisualState(question: string, answer: string): VisualState 
     animation: finalAnimation,
     spatial: finalSpatial,
     colourSwatch: colourSwatch ?? undefined,
+    sizeVariant,
   };
 }
 

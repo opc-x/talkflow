@@ -29,15 +29,18 @@ import type { PracticeEvalMode } from "@/lib/practice-evaluate-client";
 import type { ListeningHandle } from "@/lib/local-practice";
 import type { AiRecordingHandle } from "@/lib/practice-evaluate-client";
 import type { RoundEvaluation } from "@shared/types/assessment";
-import { MicRecordButton } from "@/components/speak/mic-record-button";
+import { SpeakStage } from "@/components/learn/speak-stage";
 import { EvaluationFeedback } from "@/components/speak/evaluation-feedback";
 import { QaScene } from "@/components/scenes/qa-scene";
+import { resolveLessonArtPack } from "@/lib/scene-art-pack";
 import { scoringReference, inferVisualState } from "@/lib/parse-qa-visual";
 import {
   buildLearnViewQuery,
   type LearnViewPhase,
 } from "@/lib/learn-url-state";
 import { COPY } from "@/lib/copy";
+import { LearnVocabDevPanel } from "@/components/learn/learn-vocab-dev-panel";
+import { LearnQuestionBanner } from "@/components/learn/learn-question-banner";
 
 const VocabList = dynamic(
   () => import("@/components/learn/vocab-list").then((mod) => mod.VocabList),
@@ -90,6 +93,7 @@ interface Props {
   stageLabel: string;
   sceneImageUrl?: string | null;
   sceneTitle?: string | null;
+  sceneImagePrompt?: string | null;
   vocabTerms: VocabTerm[];
   totalSentences: number;
   /** Dev preview: skip vocab intro and land on first Q&A */
@@ -134,6 +138,7 @@ export function SessionCard({
   stageLabel,
   sceneImageUrl,
   sceneTitle,
+  sceneImagePrompt = null,
   vocabTerms,
   totalSentences,
   initialPhase,
@@ -148,6 +153,11 @@ export function SessionCard({
   const viewSeed = useMemo(
     () => clampLearnView(segments, initialLearnView),
     [segments, initialLearnView],
+  );
+
+  const sceneArtPack = useMemo(
+    () => resolveLessonArtPack(bookNum, lessonNum),
+    [bookNum, lessonNum],
   );
 
   const [segIdx, setSegIdx] = useState(viewSeed.segIdx);
@@ -193,6 +203,36 @@ export function SessionCard({
     });
   }, [segments]);
 
+  const segment = segments[segIdx];
+  const firstQaPair = useMemo(
+    () => segment?.pairs.find((p) => p.question.trim() !== "") ?? null,
+    [segment],
+  );
+  const [vocabFocusTerm, setVocabFocusTerm] = useState<string | null>(null);
+
+  useEffect(() => {
+    setVocabFocusTerm(null);
+  }, [segIdx]);
+
+  const vocabScene = useMemo(() => {
+    if (vocabFocusTerm) {
+      const t = vocabFocusTerm.trim();
+      return { question: "What's this?", answer: `It's a ${t}.` };
+    }
+    if (firstQaPair) {
+      return { question: firstQaPair.question, answer: firstQaPair.answer };
+    }
+    return { question: "What's this?", answer: "It's a pen." };
+  }, [vocabFocusTerm, firstQaPair]);
+
+  const vocabSubcaption = useMemo(() => {
+    if (!segment) return "";
+    if (vocabTerms.length > 0) {
+      return `${COPY.vocabHint(vocabTerms.length)} · 点词联动场景`;
+    }
+    return segment.vocab.split(" | ").slice(0, 4).join(" · ");
+  }, [vocabTerms.length, segment, segment?.vocab]);
+
   if (done) {
     return (
       <LessonComplete
@@ -208,7 +248,6 @@ export function SessionCard({
     );
   }
 
-  const segment = segments[segIdx];
   if (!segment) {
     return (
       <div
@@ -229,6 +268,19 @@ export function SessionCard({
 
   const pair = segment.pairs[pairIdx] ?? null;
   const isGrammarNote = pair !== null && pair.question === "";
+
+  const pairVisualState = pair?.question
+    ? (pair.visualState ?? inferVisualState(pair.question, pair.answer))
+    : null;
+
+  const showQuestionBanner =
+    phase === "question" &&
+    Boolean(pair?.question) &&
+    !isGrammarNote &&
+    pairVisualState?.template !== "concept_card";
+
+  /** 开口说阶段：场景 + 问句 + 麦克风尽量一屏，少滚动 */
+  const isQuestionSpeak = phase === "question" && !isGrammarNote;
 
   const currentSentenceIndex =
     sentenceOffsets[segIdx] +
@@ -418,10 +470,20 @@ export function SessionCard({
       : 0;
 
   return (
-    <div className="flex-1 bg-background flex flex-col">
-      <header className="sticky top-14 z-10 bg-background/80 backdrop-blur-sm border-b border-border">
-        <div className="max-w-2xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between mb-3">
+    <div
+      className={
+        isQuestionSpeak
+          ? "flex min-h-0 flex-1 flex-col bg-background max-md:h-[calc(100dvh-9rem)] max-md:max-h-[calc(100dvh-9rem)]"
+          : "flex flex-1 flex-col bg-background"
+      }
+    >
+      <header
+        className={`sticky top-14 z-10 border-b border-border bg-background/80 backdrop-blur-sm ${isQuestionSpeak ? "shrink-0" : ""}`}
+      >
+        <div className={`max-w-2xl mx-auto px-4 ${isQuestionSpeak ? "py-2.5" : "py-4"}`}>
+          <div
+            className={`flex items-center justify-between ${isQuestionSpeak ? "mb-2" : "mb-3"}`}
+          >
             {phase === "vocab" && segIdx === 0 ? (
               <a
                 href={homeHref}
@@ -459,40 +521,47 @@ export function SessionCard({
       </header>
 
       <main
-        className="flex-1 flex flex-col max-w-2xl mx-auto w-full px-4 py-4 pb-6"
+        className={
+          isQuestionSpeak
+            ? "mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col overflow-hidden px-4 py-2 pb-3 max-md:pb-4 md:py-4 md:pb-28"
+            : "mx-auto flex flex-1 flex-col max-w-2xl w-full px-4 py-4 pb-28"
+        }
         data-learn-phase={phase}
       >
         {phase === "vocab" && (
           <>
             <div
-              className="relative mb-4 aspect-[4/3] w-full shrink-0 overflow-hidden rounded-2xl border border-border bg-[#FFF9F3]"
+              className="relative mb-4 aspect-[4/3] w-full shrink-0 overflow-hidden rounded-2xl"
               data-testid="learn-vocab-scene"
             >
               <QaScene
-                question="What's this?"
-                answer="It's a pen"
+                key={`vocab-${vocabScene.question}-${vocabScene.answer}`}
+                question={vocabScene.question}
+                answer={vocabScene.answer}
                 variant="hero"
+                interactive
+                learnPhase="vocab"
+                artPack={sceneArtPack}
+                sceneTitle={sceneTitle ?? COPY.sceneFallbackTitle}
+                sceneSubcaption={vocabSubcaption}
                 className="absolute inset-0 h-full rounded-none border-0 shadow-none"
               />
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-4 pb-3 pt-10">
-                <p className="text-sm font-medium text-white">
-                  {sceneTitle ?? COPY.sceneFallbackTitle}
-                </p>
-                <p className="text-xs text-white/70">
-                  {vocabTerms.length > 0
-                    ? COPY.vocabHint(vocabTerms.length)
-                    : segment.vocab.split(" | ").slice(0, 4).join(" · ")}
-                </p>
-              </div>
             </div>
 
             {vocabTerms.length > 0 ? (
               <div className="mb-4 max-h-[32vh] overflow-y-auto rounded-xl border border-border bg-card/50 px-1">
                 <p className="sticky top-0 z-10 bg-card/95 px-3 py-2 text-xs font-medium uppercase tracking-wider text-muted-foreground backdrop-blur-sm">
-                  本课新词（点词可听）
+                  本课新词（点词 → 场景联动 · 喇叭发音）
                 </p>
                 <VocabListErrorBoundary>
-                  <VocabList terms={vocabTerms} />
+                  <VocabList
+                    terms={vocabTerms}
+                    activeTerm={vocabFocusTerm}
+                    onTermFocus={(term) => {
+                      setVocabFocusTerm(term);
+                      void playUtterance(term, vocabTerms.find((t) => t.term === term)?.audioUrl);
+                    }}
+                  />
                 </VocabListErrorBoundary>
               </div>
             ) : (
@@ -500,6 +569,19 @@ export function SessionCard({
                 {segment.vocab.split(" | ").join(" · ")}
               </p>
             )}
+
+            <LearnVocabDevPanel
+              artPack={sceneArtPack}
+              lessonNum={lessonNum}
+              segIdx={segIdx}
+              vocabTerms={vocabTerms.map((t) => t.term)}
+              focusTerm={vocabFocusTerm}
+              question={vocabScene.question}
+              answer={vocabScene.answer}
+              sceneImagePrompt={sceneImagePrompt}
+              sceneTitle={sceneTitle}
+            />
+
             <div className="mt-auto pt-2">
               <Button
                 size="lg"
@@ -513,50 +595,72 @@ export function SessionCard({
         )}
 
         {phase !== "vocab" && pair && (
-          <>
+          <div className={isQuestionSpeak ? "flex min-h-0 flex-1 flex-col" : undefined}>
             {!isGrammarNote ? (
-              <QaScene
-                key={`${segIdx}-${pairIdx}-${pair.question}`}
-                question={pair.question}
-                answer={pair.answer}
-                variant="hero"
-                interactive
-                className="mb-4"
-              />
+              showQuestionBanner ? (
+                <div
+                  className={`stage-rise stage-rise-1 shrink-0 overflow-hidden rounded-2xl border border-stone-800/80 shadow-[0_12px_40px_-12px_rgba(0,0,0,0.65)] ${isQuestionSpeak ? "mb-2" : "mb-4"}`}
+                  data-testid="learn-scene-with-question"
+                >
+                  <QaScene
+                    key={`${segIdx}-${pairIdx}-${pair.question}-${phase}`}
+                    question={pair.question}
+                    answer={pair.answer}
+                    sceneImageUrl={pair.sceneImageUrl}
+                    variant={isQuestionSpeak ? "compact" : "hero"}
+                    interactive
+                    learnPhase={phase}
+                    artPack={sceneArtPack}
+                    suppressInSceneQuestion
+                    className="!mb-0 !rounded-none !border-0 !shadow-none"
+                  />
+                  <LearnQuestionBanner
+                    question={pair.question}
+                    compact={isQuestionSpeak}
+                  />
+                </div>
+              ) : (
+                <QaScene
+                  key={`${segIdx}-${pairIdx}-${pair.question}-${phase}`}
+                  question={pair.question}
+                  answer={pair.answer}
+                  sceneImageUrl={pair.sceneImageUrl}
+                  variant={phase === "question" ? "compact" : "hero"}
+                  interactive
+                  learnPhase={phase}
+                  artPack={sceneArtPack}
+                  className={isQuestionSpeak ? "mb-2 shrink-0" : "mb-4"}
+                />
+              )
             ) : (
               <div className="relative mb-4 aspect-[4/3] max-h-[28vh] w-full shrink-0 overflow-hidden rounded-2xl border border-border bg-muted flex items-center justify-center">
                 <p className="text-sm text-muted-foreground px-6 text-center">语法要点</p>
               </div>
             )}
 
-            {!isGrammarNote && (
-              <div className="flex flex-col justify-center mb-4">
-                <p className="text-sm text-muted-foreground mb-2">AI 问你</p>
-                <p className="text-2xl md:text-3xl font-medium text-foreground leading-relaxed text-balance">
-                  {pair.question}
-                </p>
-              </div>
-            )}
-
             {phase === "question" && !isGrammarNote && (
-              <div className="mt-8 flex flex-col gap-4">
-                {actionError && (
-                  <p className="text-sm text-destructive text-center">{actionError}</p>
-                )}
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="rounded-2xl h-12"
-                  onClick={() => playUtterance(pair.question, pair.audioUrl)}
-                >
-                  <Volume2 className="w-4 h-4 mr-2" />
-                  听问题
-                </Button>
-                <MicRecordButton
-                  busy={listening}
-                  onPressStart={onMicPressStart}
-                  onPressEnd={onMicPressEnd}
+              <div className="stage-rise stage-rise-2 relative mt-2 flex min-h-0 flex-1 flex-col justify-center overflow-hidden rounded-2xl border border-white/[0.06] bg-[#0b0b0b] px-4 pb-4 pt-3 md:mt-4 md:px-6 md:pb-7 md:pt-6">
+                {/* 聚光灯地面光晕 */}
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute inset-x-0 bottom-0 h-40 md:h-56"
+                  style={{
+                    background:
+                      "radial-gradient(60% 90% at 50% 100%, rgba(16,185,129,0.14), transparent 70%)",
+                  }}
                 />
+                <div className="relative min-h-0">
+                  {actionError && (
+                    <p className="mb-2 text-center text-sm text-rose-400 md:mb-4">{actionError}</p>
+                  )}
+                  <SpeakStage
+                    compact
+                    busy={listening}
+                    onPressStart={onMicPressStart}
+                    onPressEnd={onMicPressEnd}
+                    onListen={() => playUtterance(pair.question, pair.audioUrl)}
+                  />
+                </div>
               </div>
             )}
 
@@ -583,18 +687,14 @@ export function SessionCard({
               <>
                 {!isGrammarNote && (
                   <>
-                    <div className="border-t border-border my-6" />
-                    <p className="text-xl md:text-2xl text-foreground/90 leading-relaxed whitespace-pre-wrap">
-                      {pair.answer}
-                    </p>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="mt-3 self-start rounded-xl"
+                      className="mt-2 self-center rounded-xl"
                       onClick={() => speakEnglish(pair.answer, 0.8)}
                     >
                       <Volume2 className="w-4 h-4 mr-2" />
-                      听参考答案
+                      再听一遍参考答案
                     </Button>
                   </>
                 )}
@@ -642,17 +742,19 @@ export function SessionCard({
                 </div>
               </>
             )}
-          </>
+          </div>
         )}
 
-        <div className="mt-6 text-center">
-          <a
-            href={homeHref}
-            className="text-sm text-muted-foreground hover:text-foreground"
-          >
-            返回首页
-          </a>
-        </div>
+        {phase !== "question" && (
+          <div className="mt-6 text-center">
+            <a
+              href={homeHref}
+              className="text-sm text-muted-foreground hover:text-foreground"
+            >
+              返回首页
+            </a>
+          </div>
+        )}
       </main>
     </div>
   );

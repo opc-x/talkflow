@@ -66,7 +66,7 @@ export default async function LessonPage({ params, searchParams }: Props) {
   if (lesson?.id) {
     const { data: qaRows } = await supabase
       .from("qa_pairs")
-      .select("id, question, answer, audio_url, visual_state")
+      .select("id, question, answer, audio_url, visual_state, scene_image_url")
       .eq("lesson_id", lesson.id);
 
     if (qaRows?.length) {
@@ -80,16 +80,18 @@ export default async function LessonPage({ params, searchParams }: Props) {
 
   let sceneImageUrl: string | null = null;
   let sceneTitle: string | null = null;
+  let sceneImagePrompt: string | null = null;
   if (lesson?.id) {
     const { data: scene } = await supabase
       .from("scenes")
-      .select("image_url, title, image_type")
+      .select("image_url, title, image_type, image_prompt")
       .eq("lesson_id", lesson.id)
       .order("position")
       .limit(1)
       .maybeSingle();
     sceneImageUrl = scene?.image_url ?? null;
     sceneTitle = scene?.title ?? null;
+    sceneImagePrompt = scene?.image_prompt ?? null;
   }
 
   const { data: termsRows } = await supabase
@@ -131,6 +133,7 @@ export default async function LessonPage({ params, searchParams }: Props) {
       stageLabel={stageLabel}
       sceneImageUrl={sceneImageUrl}
       sceneTitle={sceneTitle}
+      sceneImagePrompt={sceneImagePrompt}
       vocabTerms={vocabTerms}
       totalSentences={Math.max(totalSentences, 1)}
       initialLearnView={learnView}
